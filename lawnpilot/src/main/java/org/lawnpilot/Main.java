@@ -29,11 +29,14 @@ public class Main {
 
     private static List<String> readInput(String[] args) throws IOException {
         if (args.length > 0) {
-            return Files.readAllLines(Path.of(args[0]));
+            return normalizeInputLines(Files.readAllLines(Path.of(args[0])));
         }
 
-        if (System.in.available() > 0) {
-            return readStdinLines();
+        if (System.console() == null) {
+            List<String> stdinLines = readStdinLines();
+            if (!stdinLines.isEmpty()) {
+                return stdinLines;
+            }
         }
 
         return List.of("5 5", "1 2 N", "LFLFLFLFF", "3 3 E", "FFRFFRFRRF");
@@ -44,11 +47,22 @@ public class Main {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (!line.isBlank()) {
-                    lines.add(line.trim());
+                lines.add(line);
+            }
+        }
+        return normalizeInputLines(lines);
+    }
+
+    private static List<String> normalizeInputLines(List<String> lines) {
+        List<String> normalized = new ArrayList<>();
+        for (String line : lines) {
+            if (line != null) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty()) {
+                    normalized.add(trimmed);
                 }
             }
         }
-        return lines;
+        return normalized;
     }
 }

@@ -50,4 +50,20 @@ class InputParserTest {
         assertThrows(InvalidMowerDefinitionException.class,
                 () -> parser.parseMowers(mowerLines, new Lawn(5, 5)));
     }
+
+    @Test
+    void rejectsInvalidDirectionToken() {
+        List<String> mowerLines = List.of("1 2 X", "F");
+
+        assertThrows(InvalidMowerDefinitionException.class,
+                () -> parser.parseMowers(mowerLines, new Lawn(5, 5)));
+    }
+
+    @Test
+    void rejectsNegativeLawnBounds() {
+        List<String> lines = List.of("-1 5");
+
+        assertThrows(InvalidLawnException.class,
+                () -> parser.parseLawn(lines));
+    }
 }
