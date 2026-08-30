@@ -2,67 +2,60 @@ package org.lawnpilot;
 
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 public class Mower {
 
-    private int x;
-    private int y;
+    private Position position;
     private Direction direction;
 
     public Mower(int x, int y, Direction direction) {
-        this.x = x;
-        this.y = y;
+        this(new Position(x, y), direction);
+    }
+
+    public Mower(Position position, Direction direction) {
+        this.position = position;
         this.direction = direction;
     }
 
     public void execute(String instructions, Lawn lawn) {
         for (char c : instructions.toCharArray()) {
-            if (c == 'L')
-                turnLeft();
-            else if (c == 'R')
-                turnRight();
-            else if (c == 'F')
-                move(lawn);
+            InstructionCommand.tryParse(c).ifPresent(command -> command.apply(this, lawn));
         }
     }
 
-    private void turnLeft() {
-        switch (direction) {
-            case N -> direction = Direction.W;
-            case W -> direction = Direction.S;
-            case E -> direction = Direction.N;
-            case S -> direction = Direction.E;
+    public void execute(List<MowerCommand> commands, Lawn lawn) {
+        for (MowerCommand command : commands) {
+            command.apply(this, lawn);
         }
     }
 
-    private void turnRight() {
-        switch (direction) {
-            case E -> direction = Direction.S;
-            case N -> direction = Direction.E;
-            case S -> direction = Direction.W;
-            case W -> direction = Direction.N;
+    void turnLeft() {
+        direction = direction.turnLeft();
+    }
+
+    void turnRight() {
+        direction = direction.turnRight();
+    }
+
+    void moveForward(Lawn lawn) {
+        Position nextPosition = direction.moveForward(position);
+        if (lawn.isInside(nextPosition)) {
+            position = nextPosition;
         }
     }
 
-    private void move(Lawn lawn) {
-        int nextX = x;
-        int nextY = y;
+    public int getX() {
+        return position.getX();
+    }
 
-        switch (direction) {
-            case N -> nextY++;
-            case W -> nextX--;
-            case E -> nextX++;
-            case S -> nextY--;
-        }
-
-        if (lawn.isInside(nextX, nextY)) {
-            x = nextX;
-            y = nextY;
-        }
+    public int getY() {
+        return position.getY();
     }
 
     @Override
     public String toString() {
-        return x + " " + y + " " + direction;
+        return getX() + " " + getY() + " " + direction;
     }
 }

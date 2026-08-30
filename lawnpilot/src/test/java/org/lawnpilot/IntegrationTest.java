@@ -19,10 +19,10 @@ class IntegrationTest {
 
         InputParser parser = new InputParser();
         Lawn lawn = parser.parseLawn(data);
-        List<InputParser.MowerData> mowers = parser.parseMowers(data.subList(1, data.size()), lawn);
+        List<ParsedMowerInstructions> mowers = parser.parseMowers(data.subList(1, data.size()), lawn);
 
-        for (InputParser.MowerData mowerData : mowers) {
-            mowerData.getMower().execute(mowerData.getInstructions(), lawn);
+        for (ParsedMowerInstructions mowerData : mowers) {
+            mowerData.getMower().execute(mowerData.getCommands(), lawn);
         }
 
         assertEquals("1 3 N", mowers.get(0).getMower().toString());
@@ -38,10 +38,10 @@ class IntegrationTest {
 
         InputParser parser = new InputParser();
         Lawn lawn = parser.parseLawn(data);
-        List<InputParser.MowerData> mowers = parser.parseMowers(data.subList(1, data.size()), lawn);
+        List<ParsedMowerInstructions> mowers = parser.parseMowers(data.subList(1, data.size()), lawn);
 
-        for (InputParser.MowerData mowerData : mowers) {
-            mowerData.getMower().execute(mowerData.getInstructions(), lawn);
+        for (ParsedMowerInstructions mowerData : mowers) {
+            mowerData.getMower().execute(mowerData.getCommands(), lawn);
         }
 
         assertEquals("2 2 E", mowers.get(0).getMower().toString());

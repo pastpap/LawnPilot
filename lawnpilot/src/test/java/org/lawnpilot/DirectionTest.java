@@ -7,6 +7,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class DirectionTest {
 
     @Test
+    void directionHelpersTurnAsExpected() {
+        assertEquals(Direction.W, Direction.N.turnLeft());
+        assertEquals(Direction.E, Direction.N.turnRight());
+    }
+
+    @Test
+    void moveForwardHelperReturnsTranslatedPosition() {
+        Position start = new Position(2, 2);
+
+        Position north = Direction.N.moveForward(start);
+        Position east = Direction.E.moveForward(start);
+
+        assertEquals(2, north.getX());
+        assertEquals(3, north.getY());
+        assertEquals(3, east.getX());
+        assertEquals(2, east.getY());
+    }
+
+    @Test
     void turnLeftFromNorthFacesWest() {
         Lawn lawn = new Lawn(5, 5);
         Mower mower = new Mower(1, 1, Direction.N);

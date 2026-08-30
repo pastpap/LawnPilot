@@ -11,19 +11,21 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) {
         try {
-            List<String> data = readInput(args);
-
-            InputParser ip = new InputParser();
-            Lawn lawn = ip.parseLawn(data);
-            List<InputParser.MowerData> mowers = ip.parseMowers(data.subList(1, data.size()), lawn);
-
-            for (InputParser.MowerData mowerData : mowers) {
-                mowerData.getMower().execute(mowerData.getInstructions(), lawn);
-                System.out.println(mowerData.getMower());
-            }
+            runSimulation(readInput(args));
         } catch (InvalidInputException | IOException ex) {
             System.err.println("Input error: " + ex.getMessage());
             System.exit(1);
+        }
+    }
+
+    private static void runSimulation(List<String> data) {
+        InputParser parser = new InputParser();
+        Lawn lawn = parser.parseLawn(data);
+        List<ParsedMowerInstructions> mowers = parser.parseMowers(data.subList(1, data.size()), lawn);
+
+        for (ParsedMowerInstructions mowerInstructions : mowers) {
+            mowerInstructions.getMower().execute(mowerInstructions.getCommands(), lawn);
+            System.out.println(mowerInstructions.getMower());
         }
     }
 
