@@ -1,6 +1,11 @@
-package org.lawnpilot;
+package org.lawnpilot.parser;
 
 import org.junit.jupiter.api.Test;
+import org.lawnpilot.exceptions.InvalidInstructionException;
+import org.lawnpilot.exceptions.InvalidLawnException;
+import org.lawnpilot.exceptions.InvalidMowerDefinitionException;
+import org.lawnpilot.model.Lawn;
+import org.lawnpilot.model.ParsedMowerInstructions;
 
 import java.util.List;
 

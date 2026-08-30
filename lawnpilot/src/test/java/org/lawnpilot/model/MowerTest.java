@@ -1,4 +1,4 @@
-package org.lawnpilot;
+package org.lawnpilot.model;
 
 import org.junit.jupiter.api.Test;
 

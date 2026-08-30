@@ -1,6 +1,7 @@
-package org.lawnpilot;
+package org.lawnpilot.model;
 
 import lombok.Getter;
+import org.lawnpilot.command.MowerCommand;
 
 import java.util.List;
 

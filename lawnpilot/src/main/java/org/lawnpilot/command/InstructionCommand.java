@@ -1,4 +1,7 @@
-package org.lawnpilot;
+package org.lawnpilot.command;
+
+import org.lawnpilot.model.Lawn;
+import org.lawnpilot.model.Mower;
 
 import java.util.Optional;
 

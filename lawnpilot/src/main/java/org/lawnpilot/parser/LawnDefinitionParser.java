@@ -1,4 +1,8 @@
-package org.lawnpilot;
+package org.lawnpilot.parser;
+
+import org.lawnpilot.exceptions.InvalidInputException;
+import org.lawnpilot.exceptions.InvalidLawnException;
+import org.lawnpilot.model.Lawn;
 
 final class LawnDefinitionParser {
 
