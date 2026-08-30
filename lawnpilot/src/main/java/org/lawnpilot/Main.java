@@ -3,7 +3,9 @@ package org.lawnpilot;
 import org.lawnpilot.exceptions.InvalidInputException;
 import org.lawnpilot.model.Lawn;
 import org.lawnpilot.model.ParsedMowerInstructions;
+import org.lawnpilot.plugin.registry.PluginRegistry;
 import org.lawnpilot.parser.InputParser;
+import org.lawnpilot.runtime.SimulationEngine;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,10 +29,11 @@ public class Main {
         InputParser parser = new InputParser();
         Lawn lawn = parser.parseLawn(data);
         List<ParsedMowerInstructions> mowers = parser.parseMowers(data.subList(1, data.size()), lawn);
+        PluginRegistry pluginRegistry = PluginRegistry.withDefaults();
+        SimulationEngine engine = new SimulationEngine(pluginRegistry);
 
-        for (ParsedMowerInstructions mowerInstructions : mowers) {
-            mowerInstructions.getMower().execute(mowerInstructions.getCommands(), lawn);
-            System.out.println(mowerInstructions.getMower());
+        for (String line : engine.run(mowers, lawn)) {
+            System.out.println(line);
         }
     }
 

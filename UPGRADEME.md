@@ -82,3 +82,36 @@ Verification notes:
 - Executed test command: ./gradlew test
 - Result: BUILD SUCCESSFUL
 - Phase 2 implementation evidence: added Position and ParsedMowerInstructions value objects, extracted LawnDefinitionParser/MowerDefinitionParser/InstructionSequenceParser/ListLineTokenizer, introduced MowerCommand plus InstructionCommand abstraction, and moved turn/move-forward helpers into Direction and Mower collaboration.
+
+## Phase 3 - Plugin Runtime Introduction
+
+Goal: Support plug-and-play features without core rewrites.
+
+Initial plugin contracts:
+
+1. DecisionStrategy: instruction-driven default and autonomous alternatives.
+2. CollisionPolicy: current boundary-only default and multi-mower policy options.
+3. OutputFormatter: current text output default and JSON/web-friendly formats.
+
+Work:
+
+1. Defined plugin interfaces and default implementations.
+2. Added plugin registry and versioned contract metadata checks.
+3. Added lifecycle management hooks (register, enable, disable).
+4. Added runtime fallback isolation so plugin failure does not crash simulation.
+
+Quality gates:
+
+1. Default plugins reproduce baseline behavior exactly.
+2. Plugin failure is isolated and does not crash core engine.
+3. Plugin contract compatibility tests are enforced.
+
+Completion update (2026-08-30): Completed and validated.
+
+Verification notes:
+
+- Executed test command: ./gradlew test
+- Result: BUILD SUCCESSFUL
+- Behavior parity evidence: SimulationEngine default plugin test preserves reference outputs 1 3 N and 5 1 E.
+- Isolation evidence: failing DecisionStrategy, CollisionPolicy, and OutputFormatter tests confirm runtime fallback to baseline behavior.
+- Contract enforcement evidence: PluginRegistry tests reject incompatible contract versions and verify register/enable/disable lifecycle behavior.
