@@ -19,12 +19,13 @@ class InputParserTest {
                 "LFLFLFLFF");
 
         Lawn lawn = parser.parseLawn(lines);
-        List<InputParser.MowerData> mowers = parser.parseMowers(lines.subList(1, lines.size()), lawn);
+        List<ParsedMowerInstructions> mowers = parser.parseMowers(lines.subList(1, lines.size()), lawn);
 
         assertEquals(5, lawn.getMaxX());
         assertEquals(5, lawn.getMaxY());
         assertEquals(1, mowers.size());
         assertEquals("LFLFLFLFF", mowers.get(0).getInstructions());
+        assertEquals(9, mowers.get(0).getCommands().size());
     }
 
     @Test

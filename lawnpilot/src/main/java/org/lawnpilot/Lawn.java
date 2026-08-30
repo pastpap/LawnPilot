@@ -15,4 +15,8 @@ public class Lawn {
     public boolean isInside(int x, int y) {
         return x >= 0 && x <= maxX && y >= 0 && y <= maxY;
     }
+
+    public boolean isInside(Position position) {
+        return isInside(position.getX(), position.getY());
+    }
 }
