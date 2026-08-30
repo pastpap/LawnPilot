@@ -6,6 +6,7 @@ import org.lawnpilot.exceptions.InvalidLawnException;
 import org.lawnpilot.exceptions.InvalidMowerDefinitionException;
 import org.lawnpilot.model.Lawn;
 import org.lawnpilot.model.ParsedMowerInstructions;
+import org.lawnpilot.model.Position;
 
 import java.util.List;
 
@@ -71,5 +72,42 @@ class InputParserTest {
 
         assertThrows(InvalidLawnException.class,
                 () -> parser.parseLawn(lines));
+    }
+
+    @Test
+    void parsesMaskedLawnDefinitionAndKeepsExpectedBounds() {
+        Lawn lawn = parser.parseLawn(List.of("MASK 0,0 1,0 1,1 2,1"));
+
+        assertEquals(2, lawn.getMaxX());
+        assertEquals(1, lawn.getMaxY());
+        assertEquals(true, lawn.isInside(new Position(1, 1)));
+        assertEquals(false, lawn.isInside(new Position(2, 0)));
+    }
+
+    @Test
+    void rejectsMaskedLawnWithoutCells() {
+        assertThrows(InvalidLawnException.class,
+                () -> parser.parseLawn(List.of("MASK")));
+    }
+
+    @Test
+    void rejectsMaskedLawnWithMalformedCellToken() {
+        assertThrows(InvalidLawnException.class,
+                () -> parser.parseLawn(List.of("MASK 0,0 1x1")));
+    }
+
+    @Test
+    void rejectsMaskedLawnWithDuplicateCells() {
+        assertThrows(InvalidLawnException.class,
+                () -> parser.parseLawn(List.of("MASK 0,0 1,1 1,1")));
+    }
+
+    @Test
+    void rejectsMowerStartOutsideMaskedLawn() {
+        Lawn lawn = parser.parseLawn(List.of("MASK 0,0 1,0 1,1"));
+        List<String> mowerLines = List.of("0 1 N", "F");
+
+        assertThrows(InvalidMowerDefinitionException.class,
+                () -> parser.parseMowers(mowerLines, lawn));
     }
 }

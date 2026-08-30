@@ -115,3 +115,39 @@ Verification notes:
 - Behavior parity evidence: SimulationEngine default plugin test preserves reference outputs 1 3 N and 5 1 E.
 - Isolation evidence: failing DecisionStrategy, CollisionPolicy, and OutputFormatter tests confirm runtime fallback to baseline behavior.
 - Contract enforcement evidence: PluginRegistry tests reject incompatible contract versions and verify register/enable/disable lifecycle behavior.
+
+## Phase 4 - Autonomous Engine and Evented Execution
+
+Goal: Add autonomous mode as an explicit engine path.
+
+Work:
+
+1. Build autonomous simulation engine with sensor/context input.
+2. Add step events for trace, replay, and diagnostics.
+3. Add execution safeguards: max steps, timeout, conflict handling.
+4. Enforce occupancy-safe multi-mower movement in instruction and autonomous modes.
+5. Support non-rectangular plot geometry while preserving rectangular input compatibility.
+
+Quality gates:
+
+1. Instruction-driven mode remains unchanged.
+2. Autonomous runs are deterministic for identical seeds/config.
+3. Execution traces are replayable and auditable.
+4. No two mowers can occupy the same cell at the same logical time.
+5. Non-rectangular geometry is supported in domain/runtime without breaking parser-based rectangular inputs.
+
+Completion update (2026-08-30): Completed and validated.
+
+Verification notes:
+
+- Executed test command: ./gradlew test
+- Result: BUILD SUCCESSFUL
+- Implementation evidence: `SimulationEngine` now provides `runWithTrace` for instruction mode and `runAutonomous` for explicit autonomous execution.
+- Sensor/context evidence: autonomous execution uses `AutonomousSensorSnapshot` and `AutonomousDecisionContext` with deterministic seeded strategy behavior.
+- Trace evidence: `StepEvent` captures step index, command, pre/post mower state, mode, and logical tick/timestamp for every executed autonomous/instruction step.
+- Replay evidence: `TraceReplayService` verifies replay continuity and final state equality against generated execution traces.
+- Safeguard evidence: autonomous tests confirm explicit halt reasons for max step bounds and timeout bounds; conflict handling policy tests validate both `BLOCK_ALL` and `FIRST_MOVER_WINS` behavior.
+- Extension evidence: runtime occupancy guard blocks moves into cells occupied by another mower in both instruction and autonomous paths, including deterministic swap/cross outcomes.
+- Geometry evidence: domain-level `LawnGeometry` abstraction keeps rectangular parser path as default and enables mask-based non-rectangular plots in runtime tests.
+- Phase 4.x extension evidence: parser now accepts `MASK x,y [x,y ...]` as first-line lawn syntax, validates malformed/duplicate/negative cells with explicit input errors, and wires masked geometry directly into runtime execution.
+- Phase 4.x stress evidence: deterministic tests now cover high mower-count autonomous conflicts (400 mowers) and long autonomous bounds (`maxSteps=5000`) with practical CI runtime.
