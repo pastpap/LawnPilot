@@ -1,5 +1,8 @@
 package org.lawnpilot;
 
+import lombok.Getter;
+
+@Getter
 public class Lawn {
     private int maxX;
     private int maxY;

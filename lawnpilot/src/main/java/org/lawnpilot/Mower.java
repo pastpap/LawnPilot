@@ -1,5 +1,8 @@
 package org.lawnpilot;
 
+import lombok.Getter;
+
+@Getter
 public class Mower {
 
     private int x;
