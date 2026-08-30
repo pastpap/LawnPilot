@@ -1,4 +1,4 @@
-package org.lawnpilot;
+package org.lawnpilot.model;
 
 public enum Direction {
     N(0, 1),

@@ -1,6 +1,10 @@
-package org.lawnpilot;
+package org.lawnpilot.command;
 
 import org.junit.jupiter.api.Test;
+import org.lawnpilot.model.Direction;
+import org.lawnpilot.model.Lawn;
+import org.lawnpilot.model.Mower;
+import org.lawnpilot.model.ParsedMowerInstructions;
 
 import java.util.List;
 

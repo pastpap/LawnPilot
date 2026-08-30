@@ -1,4 +1,10 @@
-package org.lawnpilot;
+package org.lawnpilot.parser;
+
+import org.lawnpilot.exceptions.InvalidLawnException;
+import org.lawnpilot.exceptions.InvalidMowerDefinitionException;
+import org.lawnpilot.model.Lawn;
+import org.lawnpilot.model.Mower;
+import org.lawnpilot.model.ParsedMowerInstructions;
 
 import java.util.ArrayList;
 import java.util.List;

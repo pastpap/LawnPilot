@@ -1,4 +1,4 @@
-package org.lawnpilot;
+package org.lawnpilot.exceptions;
 
 public class InvalidInputException extends RuntimeException {
     public InvalidInputException(String message) {

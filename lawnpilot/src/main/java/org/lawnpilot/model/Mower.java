@@ -1,6 +1,8 @@
-package org.lawnpilot;
+package org.lawnpilot.model;
 
 import lombok.Getter;
+import org.lawnpilot.command.InstructionCommand;
+import org.lawnpilot.command.MowerCommand;
 
 import java.util.List;
 
@@ -31,15 +33,15 @@ public class Mower {
         }
     }
 
-    void turnLeft() {
+    public void turnLeft() {
         direction = direction.turnLeft();
     }
 
-    void turnRight() {
+    public void turnRight() {
         direction = direction.turnRight();
     }
 
-    void moveForward(Lawn lawn) {
+    public void moveForward(Lawn lawn) {
         Position nextPosition = direction.moveForward(position);
         if (lawn.isInside(nextPosition)) {
             position = nextPosition;

@@ -1,4 +1,8 @@
-package org.lawnpilot;
+package org.lawnpilot.parser;
+
+import org.lawnpilot.exceptions.InvalidInstructionException;
+import org.lawnpilot.command.InstructionCommand;
+import org.lawnpilot.command.MowerCommand;
 
 import java.util.ArrayList;
 import java.util.List;

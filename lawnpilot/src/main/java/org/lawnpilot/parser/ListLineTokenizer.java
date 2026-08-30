@@ -1,4 +1,4 @@
-package org.lawnpilot;
+package org.lawnpilot.parser;
 
 final class ListLineTokenizer {
 

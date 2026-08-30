@@ -1,4 +1,11 @@
-package org.lawnpilot;
+package org.lawnpilot.parser;
+
+import org.lawnpilot.exceptions.InvalidInputException;
+import org.lawnpilot.exceptions.InvalidMowerDefinitionException;
+import org.lawnpilot.model.Direction;
+import org.lawnpilot.model.Lawn;
+import org.lawnpilot.model.Mower;
+import org.lawnpilot.model.Position;
 
 final class MowerDefinitionParser {
 
