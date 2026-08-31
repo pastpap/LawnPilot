@@ -179,3 +179,30 @@ Verification notes:
 - Result: PASS
 - Executed frontend build path with backend available: `cd frontend && npm run build`
 - Result: PASS (includes `prebuild` OpenAPI type generation)
+
+## Phase 6 - Tenant and Fleet Management Slice
+
+Goal: Introduce tenant-scoped backend structures and role-based access while keeping existing simulation API behavior stable.
+
+Work:
+
+1. Added tenant-scoped in-memory repository and service layer for fleets, mower registration, and simulation history summary.
+2. Added tenant REST routes under `/api/v1/tenants/{tenantId}/...` for fleet creation/listing, mower registration/listing, tenant simulation execution, and history summary.
+3. Added role model from request header `X-Role` with supported values `ADMIN`, `OPERATOR`, and `VIEWER`.
+4. Added explicit 4xx mappings for tenant/role validation, authorization failures, missing resources, and duplicates.
+5. Updated root npm scripts so backend CORS and frontend API/OpenAPI hosts are driven by shared environment defaults.
+
+Quality gates:
+
+1. Existing `/api/v1/simulations` endpoint remains available and unchanged.
+2. No cross-tenant fleet/mower/history leakage.
+3. Viewer role can read but cannot mutate tenant data.
+4. Invalid role/tenant input returns explicit 4xx responses.
+
+Completion update (2026-08-31): Completed and validated.
+
+Verification notes:
+
+- Executed backend tests: `cd lawnpilot && ./gradlew test`
+- Result: PASS
+- Coverage evidence: `TenantFleetServiceTest` verifies tenant isolation and role restrictions; `TenantFleetControllerTest` verifies explicit role/tenant 4xx behavior.

@@ -1,55 +1,58 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { apiClient } from "./api/client";
+import { computed, ref } from "vue";
+import { RouterLink, RouterView, useRoute } from "vue-router";
 
-const sampleInput = `5 5\n1 2 N\nLFLFLFLFF\n3 3 E\nFFRFFRFRRF`;
-const inputText = ref(sampleInput);
-const outputLines = ref<string[]>([]);
-const error = ref("");
-const loading = ref(false);
+const route = useRoute();
+const isDark = ref(true);
 
-async function runSimulation() {
-  loading.value = true;
-  error.value = "";
-  outputLines.value = [];
+const navItems = [
+  { name: "Dashboard", path: "/dashboard" },
+  { name: "Fleet", path: "/fleet" },
+  { name: "Tracking", path: "/tracking" },
+  { name: "Analytics", path: "/analytics" },
+];
 
-  const lines = inputText.value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  const { data, error: requestError } = await apiClient.POST(
-    "/api/v1/simulations",
-    {
-      body: { inputLines: lines },
-    },
-  );
-
-  loading.value = false;
-
-  if (requestError) {
-    error.value = "Simulation failed. Check backend logs and input format.";
-    return;
-  }
-
-  outputLines.value = data?.outputLines ?? [];
-}
+const currentSection = computed(() => {
+  return navItems.find((item) => item.path === route.path)?.name ?? "Dashboard";
+});
 </script>
 
 <template>
-  <main class="panel">
-    <h1>LawnPilot Simulator</h1>
-    <p>Run the existing mower simulation via REST using generated API types.</p>
+  <main class="dashboard-shell" :class="isDark ? 'theme-dark' : 'theme-light'">
+    <header class="workspace-header">
+      <div class="brand-mark" aria-label="LawnPilot brand">LP</div>
 
-    <textarea v-model="inputText" aria-label="Simulation input" />
-    <button :disabled="loading" @click="runSimulation">
-      {{ loading ? "Running..." : "Run simulation" }}
-    </button>
+      <nav class="section-tabs" aria-label="Primary navigation">
+        <RouterLink
+          v-for="item in navItems"
+          :key="item.path"
+          :to="item.path"
+          class="tab-link"
+          active-class="active"
+        >
+          {{ item.name }}
+        </RouterLink>
+      </nav>
 
-    <p v-if="error" class="error">{{ error }}</p>
+      <div class="header-actions">
+        <button
+          class="icon-button"
+          type="button"
+          :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+          :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+          @click="isDark = !isDark"
+        >
+          <span aria-hidden="true">{{ isDark ? "☀" : "☾" }}</span>
+        </button>
+        <div class="avatar" aria-label="User profile">A</div>
+      </div>
+    </header>
 
-    <div v-if="outputLines.length > 0" class="output">
-      <div v-for="line in outputLines" :key="line">{{ line }}</div>
+    <div class="section-title">
+      <span class="eyebrow">Operations</span>
+      <h1>{{ currentSection }}</h1>
     </div>
+
+    <RouterView />
   </main>
 </template>
