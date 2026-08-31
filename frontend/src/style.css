@@ -34,17 +34,77 @@ h1 {
   margin-top: 0;
 }
 
+h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.role-chip {
+  background: #edf7ef;
+  border: 1px solid #bad7c1;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #d6e7d8;
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+}
+
+.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.three-col {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.92rem;
+}
+
+input,
+select,
 textarea {
   width: 100%;
-  min-height: 160px;
   padding: 10px;
   border-radius: 8px;
   border: 1px solid #98b7a0;
+  color: #113428;
+  background: #fff;
+}
+
+textarea {
+  min-height: 160px;
   font-family: "Menlo", "Monaco", monospace;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
 button {
-  margin-top: 12px;
   background: #1f6f4a;
   color: #fff;
   border: none;
@@ -67,7 +127,42 @@ button:disabled {
   font-family: "Menlo", "Monaco", monospace;
 }
 
+.list-card {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f4faf4;
+  border-radius: 8px;
+  border: 1px solid #c7dfcb;
+}
+
+ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.status {
+  margin-top: 16px;
+  color: #1f6f4a;
+}
+
 .error {
   margin-top: 12px;
   color: #8a1f1f;
+}
+
+.loading {
+  margin-top: 8px;
+  color: #47695a;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 900px) {
+  .two-col,
+  .three-col {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-header {
+    flex-direction: column;
+  }
 }

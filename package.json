@@ -3,11 +3,11 @@
     "private": true,
     "version": "0.1.0",
     "scripts": {
-        "dev": "concurrently -k -n backend,frontend -c cyan,green \"cd lawnpilot && ./gradlew bootRun\" \"cd frontend && npm run dev\"",
-        "dev:backend": "cd lawnpilot && ./gradlew bootRun",
-        "start:backend": "./lawnpilot/gradlew -p lawnpilot bootRun",
-        "dev:frontend": "cd frontend && npm run dev",
-        "build:frontend": "cd frontend && npm run build"
+        "dev": "concurrently -k -n backend,frontend -c cyan,green \"npm run start:backend\" \"npm run dev:frontend\"",
+        "dev:backend": "npm run start:backend",
+        "start:backend": "sh -c 'frontend_origin=\"${FRONTEND_ORIGIN:-http://localhost:5173}\"; export APP_CORS_ALLOWED_ORIGINS=\"${APP_CORS_ALLOWED_ORIGINS:-$frontend_origin}\"; ./lawnpilot/gradlew -p lawnpilot bootRun'",
+        "dev:frontend": "sh -c 'api_host=\"${API_HOST:-http://localhost:8080}\"; export VITE_API_BASE_URL=\"${VITE_API_BASE_URL:-$api_host}\"; export OPENAPI_URL=\"${OPENAPI_URL:-$api_host/v3/api-docs}\"; cd frontend && npm run dev'",
+        "build:frontend": "sh -c 'api_host=\"${API_HOST:-http://localhost:8080}\"; export VITE_API_BASE_URL=\"${VITE_API_BASE_URL:-$api_host}\"; export OPENAPI_URL=\"${OPENAPI_URL:-$api_host/v3/api-docs}\"; cd frontend && npm run build'"
     },
     "devDependencies": {
         "concurrently": "^9.0.1"
