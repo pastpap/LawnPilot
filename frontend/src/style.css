@@ -1,0 +1,73 @@
+:root {
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color: #113428;
+  background: linear-gradient(120deg, #f2f7ef 0%, #dbead8 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.panel {
+  width: min(760px, 100%);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #b7d1bd;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(17, 52, 40, 0.1);
+}
+
+h1 {
+  margin-top: 0;
+}
+
+textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #98b7a0;
+  font-family: "Menlo", "Monaco", monospace;
+}
+
+button {
+  margin-top: 12px;
+  background: #1f6f4a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.output {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f4faf4;
+  border-radius: 8px;
+  border: 1px solid #c7dfcb;
+  font-family: "Menlo", "Monaco", monospace;
+}
+
+.error {
+  margin-top: 12px;
+  color: #8a1f1f;
+}

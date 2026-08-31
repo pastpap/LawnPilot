@@ -151,3 +151,31 @@ Verification notes:
 - Geometry evidence: domain-level `LawnGeometry` abstraction keeps rectangular parser path as default and enables mask-based non-rectangular plots in runtime tests.
 - Phase 4.x extension evidence: parser now accepts `MASK x,y [x,y ...]` as first-line lawn syntax, validates malformed/duplicate/negative cells with explicit input errors, and wires masked geometry directly into runtime execution.
 - Phase 4.x stress evidence: deterministic tests now cover high mower-count autonomous conflicts (400 mowers) and long autonomous bounds (`maxSteps=5000`) with practical CI runtime.
+
+## Phase 5 - REST API and Vue Frontend
+
+Goal: Expose simulation as a web API and deliver a practical typed frontend path.
+
+Work:
+
+1. Migrated backend build to Spring Boot while preserving existing simulation domain/runtime behavior.
+2. Added REST endpoint `POST /api/v1/simulations` backed by existing parser + simulation engine.
+3. Added Vue 3 + TypeScript frontend in a root `frontend/` folder.
+4. Added build-time OpenAPI-derived TypeScript generation into frontend source (`src/generated/api.ts`).
+5. Added root scripts to run backend and frontend together.
+
+Quality gates:
+
+1. Existing backend tests from Phases 1-4 still pass.
+2. API supports reference simulation flow with typed request/response DTOs.
+3. Frontend consumes generated API types for simulation call flow.
+4. Local workflow is runnable with one root command.
+
+Completion update (2026-08-30): Completed with local validation.
+
+Verification notes:
+
+- Executed backend tests: `cd lawnpilot && ./gradlew test`
+- Result: PASS
+- Executed frontend build path with backend available: `cd frontend && npm run build`
+- Result: PASS (includes `prebuild` OpenAPI type generation)

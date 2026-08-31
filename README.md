@@ -71,3 +71,93 @@ We expect the following result as the final position of the mowers:
 1 3 N
 5 1 E
 ```
+
+## Phase 5 Local Development (REST API + Vue)
+
+### Backend (Spring Boot)
+
+Run from the repository root:
+
+```bash
+npm run start:backend
+```
+
+Alternative:
+
+```bash
+cd lawnpilot
+./gradlew bootRun
+```
+
+API endpoint:
+
+- `POST /api/v1/simulations`
+- Body:
+
+```json
+{
+  "inputLines": ["5 5", "1 2 N", "LFLFLFLFF", "3 3 E", "FFRFFRFRRF"]
+}
+```
+
+Backend CORS configuration:
+
+- Property: `app.cors.allowed-origins`
+- Environment variable override: `APP_CORS_ALLOWED_ORIGINS`
+- Default (when unset): `http://localhost:5173`
+- Multiple origins: comma-separated
+
+Examples:
+
+```bash
+# one origin
+export APP_CORS_ALLOWED_ORIGINS=http://localhost:5173
+
+# multiple origins
+export APP_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4173
+```
+
+### Frontend (Vue 3 + TypeScript)
+
+Run from the repository root:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend generates TypeScript API types from the backend OpenAPI schema at build/dev time.
+Default schema URL: `http://localhost:8080/v3/api-docs`
+If the backend is temporarily unavailable, the build falls back to the last generated types in `frontend/src/generated/api.ts`.
+
+### Run Backend + Frontend Together
+
+Run from the repository root:
+
+```bash
+npm install
+cd frontend && npm install && cd ..
+npm run dev
+```
+
+Defaults:
+
+- Backend: `http://localhost:8080`
+- Frontend: `http://localhost:5173`
+
+### Verification
+
+Backend tests:
+
+```bash
+cd lawnpilot
+./gradlew test
+```
+
+Frontend build:
+
+```bash
+cd frontend
+npm run build
+```
