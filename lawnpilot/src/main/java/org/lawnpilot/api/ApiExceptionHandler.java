@@ -19,7 +19,7 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
-    @ExceptionHandler({TenantValidationException.class, RoleValidationException.class})
+    @ExceptionHandler({ TenantValidationException.class, RoleValidationException.class })
     public ResponseEntity<String> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }

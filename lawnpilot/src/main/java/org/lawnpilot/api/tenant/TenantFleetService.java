@@ -37,7 +37,8 @@ public class TenantFleetService {
                 new FleetState(normalizedFleetId, normalizedDisplayName));
 
         if (existing != null) {
-            throw new ConflictException("Fleet '" + normalizedFleetId + "' already exists for tenant '" + normalizedTenantId + "'.");
+            throw new ConflictException(
+                    "Fleet '" + normalizedFleetId + "' already exists for tenant '" + normalizedTenantId + "'.");
         }
 
         return new FleetDto(normalizedFleetId, normalizedDisplayName, 0);

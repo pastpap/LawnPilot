@@ -104,7 +104,9 @@ async function onListFleets(): Promise<void> {
       return;
     }
 
-    const stillExists = fleetList.some((fleet) => fleet.fleetId === selectedFleetId.value);
+    const stillExists = fleetList.some(
+      (fleet) => fleet.fleetId === selectedFleetId.value,
+    );
     if (!stillExists) {
       selectedFleetId.value = fleetList[0].fleetId;
     }
@@ -208,7 +210,10 @@ function onRoleChanged(): void {
     <header class="panel-header">
       <div>
         <h1>LawnPilot Tenant Console</h1>
-        <p>Manage tenant fleets and run scoped simulations with role-based headers.</p>
+        <p>
+          Manage tenant fleets and run scoped simulations with role-based
+          headers.
+        </p>
       </div>
       <div class="role-chip">Role: {{ role }}</div>
     </header>
@@ -218,7 +223,11 @@ function onRoleChanged(): void {
       <div class="grid two-col">
         <label>
           Tenant id
-          <input v-model="tenantId" aria-label="Tenant id" placeholder="tenant-alpha" />
+          <input
+            v-model="tenantId"
+            aria-label="Tenant id"
+            placeholder="tenant-alpha"
+          />
         </label>
         <label>
           Role header
@@ -236,14 +245,24 @@ function onRoleChanged(): void {
       <div class="grid three-col">
         <label>
           Fleet id
-          <input v-model="fleetId" aria-label="Fleet id" placeholder="fleet-1" />
+          <input
+            v-model="fleetId"
+            aria-label="Fleet id"
+            placeholder="fleet-1"
+          />
         </label>
         <label>
           Display name
-          <input v-model="fleetDisplayName" aria-label="Fleet display name" placeholder="North Campus" />
+          <input
+            v-model="fleetDisplayName"
+            aria-label="Fleet display name"
+            placeholder="North Campus"
+          />
         </label>
         <div class="actions">
-          <button :disabled="loading" @click="onCreateFleet">Create fleet</button>
+          <button :disabled="loading" @click="onCreateFleet">
+            Create fleet
+          </button>
           <button :disabled="loading" @click="onListFleets">List fleets</button>
         </div>
       </div>
@@ -253,7 +272,11 @@ function onRoleChanged(): void {
           Selected fleet
           <select v-model="selectedFleetId" aria-label="Selected fleet">
             <option value="" disabled>Select a fleet</option>
-            <option v-for="fleet in fleets" :key="fleet.fleetId" :value="fleet.fleetId">
+            <option
+              v-for="fleet in fleets"
+              :key="fleet.fleetId"
+              :value="fleet.fleetId"
+            >
               {{ fleet.fleetId }} ({{ fleet.displayName }})
             </option>
           </select>
@@ -262,7 +285,10 @@ function onRoleChanged(): void {
           <strong>Fleets</strong>
           <ul>
             <li v-for="fleet in fleets" :key="fleet.fleetId">
-              {{ fleet.fleetId }} - {{ fleet.displayName }} ({{ fleet.mowerCount }} mower(s))
+              {{ fleet.fleetId }} - {{ fleet.displayName }} ({{
+                fleet.mowerCount
+              }}
+              mower(s))
             </li>
             <li v-if="fleets.length === 0">No fleets loaded.</li>
           </ul>
@@ -275,14 +301,24 @@ function onRoleChanged(): void {
       <div class="grid three-col">
         <label>
           Mower id
-          <input v-model="mowerId" aria-label="Mower id" placeholder="mower-42" />
+          <input
+            v-model="mowerId"
+            aria-label="Mower id"
+            placeholder="mower-42"
+          />
         </label>
         <label>
           Model
-          <input v-model="mowerModel" aria-label="Mower model" placeholder="LP-X" />
+          <input
+            v-model="mowerModel"
+            aria-label="Mower model"
+            placeholder="LP-X"
+          />
         </label>
         <div class="actions">
-          <button :disabled="loading" @click="onRegisterMower">Register mower</button>
+          <button :disabled="loading" @click="onRegisterMower">
+            Register mower
+          </button>
           <button :disabled="loading" @click="onListMowers">List mowers</button>
         </div>
       </div>
@@ -305,7 +341,9 @@ function onRoleChanged(): void {
         <button :disabled="loading" @click="onRunSimulation">
           {{ loading ? "Running..." : "Run tenant simulation" }}
         </button>
-        <button :disabled="loading" @click="onLoadHistorySummary">Load history summary</button>
+        <button :disabled="loading" @click="onLoadHistorySummary">
+          Load history summary
+        </button>
       </div>
 
       <div v-if="historySummary" class="list-card">
@@ -313,7 +351,9 @@ function onRoleChanged(): void {
         <ul>
           <li>Tenant: {{ historySummary.tenantId }}</li>
           <li>Run count: {{ historySummary.simulationRunCount }}</li>
-          <li>Last run at: {{ historySummary.lastSimulationRunAt ?? "N/A" }}</li>
+          <li>
+            Last run at: {{ historySummary.lastSimulationRunAt ?? "N/A" }}
+          </li>
         </ul>
       </div>
 

@@ -6,29 +6,29 @@ export type SimulationRequestDto = components["schemas"]["SimulationRequestDto"]
 export type SimulationResponseDto = components["schemas"]["SimulationResponseDto"];
 
 export interface FleetCreateRequestDto {
-  fleetId: string;
-  displayName: string;
+    fleetId: string;
+    displayName: string;
 }
 
 export interface FleetDto {
-  fleetId: string;
-  displayName: string;
-  mowerCount: number;
+    fleetId: string;
+    displayName: string;
+    mowerCount: number;
 }
 
 export interface MowerRegisterRequestDto {
-  mowerId: string;
-  model: string;
+    mowerId: string;
+    model: string;
 }
 
 export interface MowerDto {
-  mowerId: string;
-  model: string;
-  registeredAt: string;
+    mowerId: string;
+    model: string;
+    registeredAt: string;
 }
 
 export interface TenantSimulationHistorySummaryDto {
-  tenantId: string;
-  simulationRunCount: number;
-  lastSimulationRunAt: string | null;
+    tenantId: string;
+    simulationRunCount: number;
+    lastSimulationRunAt: string | null;
 }

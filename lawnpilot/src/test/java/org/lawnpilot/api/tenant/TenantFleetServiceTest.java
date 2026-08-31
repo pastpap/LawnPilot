@@ -47,7 +47,8 @@ class TenantFleetServiceTest {
         tenantFleetService.createFleet("tenant-alpha", TenantRole.ADMIN, "fleet-1", "fleet");
 
         assertThrows(RoleAuthorizationException.class,
-                () -> tenantFleetService.registerMower("tenant-alpha", TenantRole.VIEWER, "fleet-1", "mower-1", "model-a"));
+                () -> tenantFleetService.registerMower("tenant-alpha", TenantRole.VIEWER, "fleet-1", "mower-1",
+                        "model-a"));
     }
 
     @Test
@@ -62,10 +63,10 @@ class TenantFleetServiceTest {
         tenantFleetService.recordSimulationRun("tenant-alpha", TenantRole.OPERATOR);
         tenantFleetService.recordSimulationRun("tenant-beta", TenantRole.OPERATOR);
 
-        TenantSimulationHistorySummaryDto alphaSummary =
-                tenantFleetService.getSimulationHistorySummary("tenant-alpha", TenantRole.VIEWER);
-        TenantSimulationHistorySummaryDto betaSummary =
-                tenantFleetService.getSimulationHistorySummary("tenant-beta", TenantRole.VIEWER);
+        TenantSimulationHistorySummaryDto alphaSummary = tenantFleetService.getSimulationHistorySummary("tenant-alpha",
+                TenantRole.VIEWER);
+        TenantSimulationHistorySummaryDto betaSummary = tenantFleetService.getSimulationHistorySummary("tenant-beta",
+                TenantRole.VIEWER);
 
         assertEquals(2, alphaSummary.simulationRunCount());
         assertEquals(1, betaSummary.simulationRunCount());

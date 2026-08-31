@@ -33,9 +33,9 @@ class TenantFleetControllerTest {
     @Test
     void createFleetRejectsInvalidRoleHeaderWith400() throws Exception {
         mockMvc.perform(post("/api/v1/tenants/tenant-alpha/fleets")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Role", "ROOT")
-                        .content("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Role", "ROOT")
+                .content("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Invalid X-Role header 'ROOT'. Allowed values: ADMIN, OPERATOR, VIEWER."));
     }
@@ -47,23 +47,24 @@ class TenantFleetControllerTest {
                         "Role 'VIEWER' is not allowed to modify tenant data. Required role: ADMIN or OPERATOR."));
 
         mockMvc.perform(post("/api/v1/tenants/tenant-alpha/fleets")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Role", "VIEWER")
-                        .content("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Role", "VIEWER")
+                .content("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\"}"))
                 .andExpect(status().isForbidden())
-                .andExpect(content().string("Role 'VIEWER' is not allowed to modify tenant data. Required role: ADMIN or OPERATOR."));
+                .andExpect(content().string(
+                        "Role 'VIEWER' is not allowed to modify tenant data. Required role: ADMIN or OPERATOR."));
     }
 
     @Test
     void createFleetSuccessStillReturnsPayload() throws Exception {
         when(tenantFleetService.createFleet(eq("tenant-alpha"), any(), eq("fleet-1"), eq("demo")))
-                                .thenReturn(new FleetDto("fleet-1", "demo", 0));
+                .thenReturn(new FleetDto("fleet-1", "demo", 0));
 
         mockMvc.perform(post("/api/v1/tenants/tenant-alpha/fleets")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Role", "ADMIN")
-                        .content("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Role", "ADMIN")
+                .content("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\"}"))
                 .andExpect(status().isOk())
-                                .andExpect(content().string("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\",\"mowerCount\":0}"));
+                .andExpect(content().string("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\",\"mowerCount\":0}"));
     }
 }
