@@ -206,3 +206,94 @@ Verification notes:
 - Executed backend tests: `cd lawnpilot && ./gradlew test`
 - Result: PASS
 - Coverage evidence: `TenantFleetServiceTest` verifies tenant isolation and role restrictions; `TenantFleetControllerTest` verifies explicit role/tenant 4xx behavior.
+
+## Phase 7 - IoT Telemetry Ingestion and Remote Mower Command Control
+
+Goal: Add IoT sensor telemetry ingestion with fleet health monitoring and remote command control with safety guardrails. Enable operators to query fleet health and issue commands (pause/resume/goto) to individual mowers while maintaining safety constraints and auditability.
+
+Work:
+
+### Backend Layer
+
+1. **Telemetry Ingestion and Storage:**
+   - Enhance `MowerTelemetryState` to track telemetry history (timestamps, battery trend, coverage progression).
+   - Add telemetry ingestion endpoint `POST /api/v1/tenants/{tenantId}/fleets/{fleetId}/mowers/{mowerId}/telemetry` to accept sensor updates.
+   - Store telemetry snapshots in per-mower circular buffer (last 24 snapshots) for trend analysis.
+
+2. **Fleet Health Aggregation:**
+   - Add `FleetHealthDto` model with: operational mower count, total mower count, average battery %, fleet coverage progress, health status (HEALTHY/DEGRADED/CRITICAL).
+   - Add endpoint `GET /api/v1/tenants/{tenantId}/fleets/{fleetId}/health` to compute fleet health from telemetry.
+   - Health calculation rules: HEALTHY if >80% mowers operational and avg battery >50%; DEGRADED if >50% operational; CRITICAL otherwise.
+
+3. **Mower Command and Control:**
+   - Define `MowerCommand` domain model with: targetMowerId, action (PAUSE/RESUME/GOTO_AREA), parameters, issuedAt, issuedBy (role).
+   - Add `MowerCommandRequest` DTO with: action, optional targetArea/coordinates, reason (audit log).
+   - Add endpoint `POST /api/v1/tenants/{tenantId}/fleets/{fleetId}/mowers/{mowerId}/command` to issue commands.
+   - Store commands in per-fleet command history (append-only, last 100 per fleet).
+
+4. **Safety Guardrails:**
+   - Commands require OPERATOR or ADMIN role (VIEWER cannot issue).
+   - Battery guardrail: reject PAUSE/RESUME if mower battery <10%.
+   - Fleet health guardrail: reject GOTO_AREA if fleet health is CRITICAL.
+   - Mower state guardrail: reject PAUSE if mower already cutting (idempotent), reject RESUME if already idle.
+   - Rate limit: max 10 commands per mower per minute per tenant.
+   - Return explicit 4xx (400 for validation, 403 for guardrail violation) with guardrail reason in message.
+
+5. **Command Trace and Auditability:**
+   - Add endpoint `GET /api/v1/tenants/{tenantId}/fleets/{fleetId}/command-history` to list recent commands (sorted by issuedAt descending).
+   - Include command outcome (ACCEPTED/REJECTED) and rejection reason (if any).
+   - Commands persist across sessions (in-memory for Phase 7, candidates for persistence in Phase 8+).
+
+6. **Telemetry Replay for Verification:**
+   - Add `TelemetryReplayService` similar to `TraceReplayService` to verify telemetry sequence integrity.
+   - Support replay of command sequences to validate fleet state transitions.
+   - Enable diagnostics endpoint (internal/ops only) to validate command→telemetry causality.
+
+### Frontend Layer
+
+7. **Fleet Health Monitoring View:**
+   - Create or enhance `AnalyticsView.vue` to display: fleet health status (visual indicator), operational mower count, average battery, coverage progress (bar chart).
+   - Real-time updates via polling (5-second interval) or WebSocket prep.
+   - Color-coded health status: green (HEALTHY), yellow (DEGRADED), red (CRITICAL).
+
+8. **Mower Command Control View:**
+   - Create or enhance `TrackingView.vue` to show mower list with current status and action buttons.
+   - Action buttons: PAUSE, RESUME, GOTO AREA (with area selector), visible only to OPERATOR/ADMIN roles.
+   - Command result feedback: show acceptance/rejection with guardrail reason.
+   - Recent command log: display last 5 commands on the same view.
+
+9. **Telemetry Integration:**
+   - Frontend `tenantApi.ts` adds methods: `getMowerTelemetry()`, `getFleetHealth()`, `issueMowerCommand()`, `getCommandHistory()`.
+   - Generated API types for all new DTOs via existing prebuild OpenAPI generation.
+
+### Testing and Verification Gates
+
+Quality gates:
+
+1. All Phase 6 tests still pass (behavior regression check).
+2. Telemetry ingestion: valid sensor updates increment history buffer; invalid inputs rejected with 400.
+3. Fleet health: calculations match documented thresholds; health status transitions correctly with mower status changes.
+4. Command acceptance: valid commands by OPERATOR role are accepted; safety guardrails block dangerous commands with explicit reason.
+5. Command rejection: VIEWER role, low battery (<10%), CRITICAL fleet health, mower state conflicts all produce correct 4xx with reason message.
+6. Auditability: all issued commands (accepted and rejected) appear in command history with issuedBy, issuedAt, outcome, reason.
+7. Role-based access: VIEWER cannot see command history details; ADMIN can see all; OPERATOR sees own commands + fleet commands.
+8. Rate limiting: >10 commands per mower per minute rejected with 429 (or 400 with rate-limit reason).
+9. Telemetry replay: command-triggered telemetry changes are verifiable via replay validation.
+10. Frontend: AnalyticsView displays fleet health with correct color coding; TrackingView action buttons enforce role visibility and show command results.
+
+Architectural notes:
+
+- All telemetry and command state lives in `TenantState` → `FleetState` (per-tenant, per-fleet scoping via existing model).
+- Commands and telemetry are append-only within their buffers (last N = last 100 commands, last 24 telemetry snapshots per mower).
+- Safety guardrails are enforced synchronously at API layer (TenantFleetService, not deferred to async processing).
+- Telemetry replay is a diagnostics feature (operators can verify command→telemetry causality) but not a blocking gate.
+- Existing simulation engine and traces (Phase 4) are orthogonal; Phase 7 commands operate on **registered mower fleet state**, not simulation input/output.
+
+Completion update (2026-08-31): **Specification and architectural design complete. Implementation to be assigned to backend/frontend specialists.**
+
+Verification plan:
+
+- Backend: TenantFleetServiceTest + TenantFleetControllerTest extended with telemetry, health, command, guardrail test cases.
+- Frontend: AnalyticsView.spec.ts + TrackingView.spec.ts for health display and command control UX.
+- Integration: End-to-end test covering tenant → fleet → mower registration → telemetry ingestion → health calculation → command issuance → guardrail enforcement → command history audit.
+- Load: Rate limiting validation under 50 commands/sec per fleet.

@@ -1,6 +1,7 @@
 package org.lawnpilot.api;
 
 import org.lawnpilot.exceptions.ConflictException;
+import org.lawnpilot.exceptions.GuardrailViolationException;
 import org.lawnpilot.exceptions.InvalidInputException;
 import org.lawnpilot.exceptions.NotFoundException;
 import org.lawnpilot.exceptions.RoleAuthorizationException;
@@ -37,5 +38,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<String> handleConflict(ConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    // Phase 7: Guardrail violation handling
+    @ExceptionHandler(GuardrailViolationException.class)
+    public ResponseEntity<String> handleGuardrailViolation(GuardrailViolationException ex) {
+        // Return 422 (Unprocessable Entity) for guardrail violations
+        // This indicates the request is well-formed but semantically invalid due to safety constraints
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ex.getMessage());
     }
 }

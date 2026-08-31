@@ -47,3 +47,22 @@ export interface TenantSimulationHistorySummaryDto {
     simulationRunCount: number;
     lastSimulationRunAt: string | null;
 }
+
+export type MowerCommandType = "PAUSE" | "RESUME" | "RETURN_HOME" | "OVERRIDE";
+
+export interface MowerCommandRequestDto {
+    mowerId: string;
+    commandType: MowerCommandType;
+    metadata?: Record<string, string | number | boolean>;
+}
+
+export interface MowerCommandResultDto {
+    commandId: string;
+    mowerId: string;
+    commandType: MowerCommandType;
+    status: "PENDING" | "ACCEPTED" | "EXECUTING" | "COMPLETED" | "FAILED" | "REJECTED";
+    errorMessage?: string;
+    createdAt: string;
+    acknowledgedAt?: string;
+    completedAt?: string;
+}

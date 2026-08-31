@@ -3,11 +3,13 @@ import { ApiError } from "./errors";
 import {
     createFleet,
     getSimulationHistorySummary,
+    getMowerCommandHistory,
     listFleets,
     listMowerTelemetry,
     listMowers,
     registerMower,
     runTenantSimulation,
+    sendMowerCommand,
 } from "./tenantApi";
 
 describe("tenantApi", () => {
@@ -133,5 +135,96 @@ describe("tenantApi", () => {
         fetchMock.mockResolvedValueOnce(new Response("Role is invalid", { status: 400, statusText: "Bad Request" }));
 
         await expect(listFleets({ tenantId: "tenant-alpha", role: "VIEWER" })).rejects.toBeInstanceOf(ApiError);
+    });
+
+    it("sends mower command with correct endpoint and role header", async () => {
+        const commandResult = {
+            commandId: "cmd-1",
+            mowerId: "mower-1",
+            commandType: "PAUSE",
+            status: "ACCEPTED",
+            createdAt: "2026-08-31T10:00:00Z",
+        };
+        fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(commandResult), { status: 200 }));
+
+        const result = await sendMowerCommand({
+            tenantId: "tenant-alpha",
+            fleetId: "fleet-1",
+            mowerId: "mower-1",
+            commandType: "PAUSE",
+            role: "OPERATOR",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, requestInit] = fetchMock.mock.calls[0];
+        expect(url).toContain("/api/v1/tenants/tenant-alpha/fleets/fleet-1/mowers/mower-1/commands");
+        expect(requestInit?.method).toBe("POST");
+        expect((requestInit?.headers as Record<string, string>)["X-Role"]).toBe("OPERATOR");
+        expect(result.commandId).toBe("cmd-1");
+        expect(result.commandType).toBe("PAUSE");
+    });
+
+    it("gets mower command history with correct endpoint", async () => {
+        const history = [
+            {
+                commandId: "cmd-1",
+                mowerId: "mower-1",
+                commandType: "PAUSE",
+                status: "COMPLETED",
+                createdAt: "2026-08-31T10:00:00Z",
+                completedAt: "2026-08-31T10:00:05Z",
+            },
+            {
+                commandId: "cmd-2",
+                mowerId: "mower-1",
+                commandType: "RESUME",
+                status: "COMPLETED",
+                createdAt: "2026-08-31T10:01:00Z",
+                completedAt: "2026-08-31T10:01:02Z",
+            },
+        ];
+        fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(history), { status: 200 }));
+
+        const result = await getMowerCommandHistory({
+            tenantId: "tenant-alpha",
+            fleetId: "fleet-1",
+            mowerId: "mower-1",
+            role: "VIEWER",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, requestInit] = fetchMock.mock.calls[0];
+        expect(url).toContain("/api/v1/tenants/tenant-alpha/fleets/fleet-1/mowers/mower-1/commands");
+        expect(requestInit?.method).toBe("GET");
+        expect((requestInit?.headers as Record<string, string>)["X-Role"]).toBe("VIEWER");
+        expect(result).toHaveLength(2);
+        expect(result[0].commandType).toBe("PAUSE");
+        expect(result[1].commandType).toBe("RESUME");
+    });
+
+    it("sends command with optional metadata", async () => {
+        const commandResult = {
+            commandId: "cmd-1",
+            mowerId: "mower-1",
+            commandType: "OVERRIDE",
+            status: "ACCEPTED",
+            createdAt: "2026-08-31T10:00:00Z",
+        };
+        fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(commandResult), { status: 200 }));
+
+        const result = await sendMowerCommand({
+            tenantId: "tenant-alpha",
+            fleetId: "fleet-1",
+            mowerId: "mower-1",
+            commandType: "OVERRIDE",
+            metadata: { operatorId: "op-123", reason: "maintenance-check" },
+            role: "ADMIN",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body.metadata).toEqual({ operatorId: "op-123", reason: "maintenance-check" });
+        expect(result.commandType).toBe("OVERRIDE");
     });
 });

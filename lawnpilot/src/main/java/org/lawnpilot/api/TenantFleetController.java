@@ -99,4 +99,73 @@ public class TenantFleetController {
             @RequestHeader("X-Role") String roleHeader) {
         return tenantFleetService.getSimulationHistorySummary(tenantId, TenantRole.fromHeader(roleHeader));
     }
+
+    // ========== Phase 7: Remote Command & Control ==========
+
+    @PostMapping("/fleets/{fleetId}/mowers/{mowerId}/commands")
+    public org.lawnpilot.api.dto.CommandResponseDto issueMowerCommand(
+            @PathVariable String tenantId,
+            @PathVariable String fleetId,
+            @PathVariable String mowerId,
+            @RequestHeader("X-Role") String roleHeader,
+            @RequestBody org.lawnpilot.api.dto.CommandRequestDto request) {
+        String commandId = tenantFleetService.issueMowerCommand(
+                tenantId,
+                TenantRole.fromHeader(roleHeader),
+                fleetId,
+                mowerId,
+                new org.lawnpilot.api.tenant.RemoteCommandRequest(
+                        request.commandType(),
+                        request.targetParameter(),
+                        request.overrideGuardrails(),
+                        request.requestedBy()));
+        return new org.lawnpilot.api.dto.CommandResponseDto(commandId, "QUEUED", "Command accepted and queued for execution");
+    }
+
+    @GetMapping("/fleets/{fleetId}/mowers/{mowerId}/commands/{commandId}")
+    public org.lawnpilot.api.dto.CommandStatusDto queryCommandStatus(
+            @PathVariable String tenantId,
+            @PathVariable String fleetId,
+            @PathVariable String mowerId,
+            @PathVariable String commandId,
+            @RequestHeader("X-Role") String roleHeader) {
+        return tenantFleetService.queryCommandStatus(
+                tenantId,
+                TenantRole.fromHeader(roleHeader),
+                fleetId,
+                mowerId,
+                commandId);
+    }
+
+    // ========== Phase 7: Telemetry Event Ingestion ==========
+
+    @PostMapping("/fleets/{fleetId}/mowers/{mowerId}/telemetry/events")
+    public void recordTelemetryEvent(
+            @PathVariable String tenantId,
+            @PathVariable String fleetId,
+            @PathVariable String mowerId,
+            @RequestHeader("X-Role") String roleHeader,
+            @RequestBody org.lawnpilot.api.dto.TelemetryEventDto eventDto) {
+        tenantFleetService.recordTelemetryEvent(
+                tenantId,
+                TenantRole.fromHeader(roleHeader),
+                fleetId,
+                mowerId,
+                eventDto.eventType(),
+                eventDto.eventData());
+    }
+
+    @GetMapping("/fleets/{fleetId}/mowers/{mowerId}/telemetry/events")
+    public java.util.List<org.lawnpilot.api.dto.TelemetryEventDto> queryMowerTelemetryEvents(
+            @PathVariable String tenantId,
+            @PathVariable String fleetId,
+            @PathVariable String mowerId,
+            @RequestHeader("X-Role") String roleHeader) {
+        return tenantFleetService.queryMowerTelemetryEvents(
+                tenantId,
+                TenantRole.fromHeader(roleHeader),
+                fleetId,
+                mowerId);
+    }
 }
+

@@ -2,6 +2,8 @@ import { requestJson } from "./http";
 import type {
     FleetCreateRequestDto,
     FleetDto,
+    MowerCommandRequestDto,
+    MowerCommandResultDto,
     MowerDto,
     MowerRegisterRequestDto,
     MowerTelemetryDto,
@@ -102,6 +104,35 @@ export async function getSimulationHistorySummary(
 ): Promise<TenantSimulationHistorySummaryDto> {
     return requestJson<TenantSimulationHistorySummaryDto>(
         `${tenantPath(request.tenantId)}/simulations/history/summary`,
+        {
+            method: "GET",
+            headers: roleHeader(request.role),
+        },
+    );
+}
+
+export async function sendMowerCommand(
+    request: TenantRequest & { fleetId: string } & MowerCommandRequestDto,
+): Promise<MowerCommandResultDto> {
+    return requestJson<MowerCommandResultDto>(
+        `${tenantPath(request.tenantId)}/fleets/${encodeURIComponent(request.fleetId)}/mowers/${encodeURIComponent(request.mowerId)}/commands`,
+        {
+            method: "POST",
+            headers: roleHeader(request.role),
+            body: {
+                mowerId: request.mowerId,
+                commandType: request.commandType,
+                metadata: request.metadata,
+            } satisfies MowerCommandRequestDto,
+        },
+    );
+}
+
+export async function getMowerCommandHistory(
+    request: TenantRequest & { fleetId: string; mowerId: string },
+): Promise<MowerCommandResultDto[]> {
+    return requestJson<MowerCommandResultDto[]>(
+        `${tenantPath(request.tenantId)}/fleets/${encodeURIComponent(request.fleetId)}/mowers/${encodeURIComponent(request.mowerId)}/commands`,
         {
             method: "GET",
             headers: roleHeader(request.role),

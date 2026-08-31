@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import TrendChart from "../components/TrendChart.vue";
 import MowerMap from "../components/MowerMap.vue";
+import MowerControlPanel from "../components/MowerControlPanel.vue";
 import {
   currentFleetId,
   currentTenantId,
@@ -19,6 +20,7 @@ import {
 
 const tenantId = currentTenantId;
 const selectedFleetId = currentFleetId;
+const selectedMowerId = ref<string | null>(null);
 
 const selectedTenant = computed(() => getTenant(tenantId.value));
 const tenantFleets = computed(() => getTenantFleets(tenantId.value));
@@ -28,6 +30,11 @@ const tenantMowers = computed(() => getTenantMowers(tenantId.value));
 const mapMowers = computed(() => {
   if (!selectedFleetId.value) return tenantMowers.value;
   return getFleetMowers(selectedFleetId.value);
+});
+
+const selectedMower = computed(() => {
+  if (!selectedMowerId.value) return null;
+  return mapMowers.value.find((m) => m.mowerId === selectedMowerId.value) || null;
 });
 
 const activeMowers = computed(
@@ -62,6 +69,20 @@ watch(
   },
   { immediate: true },
 );
+
+watch(mapMowers, () => {
+  if (selectedMowerId.value && !mapMowers.value.some((m) => m.mowerId === selectedMowerId.value)) {
+    selectedMowerId.value = null;
+  }
+});
+
+function selectMower(mowerId: string): void {
+  selectedMowerId.value = selectedMowerId.value === mowerId ? null : mowerId;
+}
+
+function handleCommandSent(commandId: string): void {
+  console.log("Command sent:", commandId);
+}
 </script>
 
 <template>
@@ -120,13 +141,24 @@ watch(
       </article>
     </section>
 
-    <article class="panel-surface map-card">
-      <MowerMap
-        :areas="tenantAreas"
-        :mowers="mapMowers"
-        :selected-mower-id="mapMowers[0]?.mowerId"
+    <section class="map-and-control-grid">
+      <article class="panel-surface map-card">
+        <MowerMap
+          :areas="tenantAreas"
+          :mowers="mapMowers"
+          :selected-mower-id="selectedMowerId || undefined"
+        />
+      </article>
+
+      <MowerControlPanel
+        v-if="selectedMower && selectedFleetId"
+        :mower="selectedMower"
+        :tenant-id="tenantId"
+        :fleet-id="selectedFleetId"
+        role="ADMIN"
+        @command-sent="handleCommandSent"
       />
-    </article>
+    </section>
 
     <section class="charts-grid">
       <article class="panel-surface chart-card">
@@ -147,7 +179,7 @@ watch(
 
     <article class="panel-surface table-card">
       <h3>Tracked mowers</h3>
-      <table>
+      <table class="mower-table">
         <thead>
           <tr>
             <th>Mower</th>
@@ -158,7 +190,13 @@ watch(
           </tr>
         </thead>
         <tbody>
-          <tr v-for="mower in mapMowers" :key="mower.mowerId">
+          <tr
+            v-for="mower in mapMowers"
+            :key="mower.mowerId"
+            class="mower-row"
+            :class="{ 'row-selected': selectedMowerId === mower.mowerId }"
+            @click="selectMower(mower.mowerId)"
+          >
             <td>{{ mower.mowerId }}</td>
             <td>{{ mower.status }}</td>
             <td>{{ mower.batteryPercent }}%</td>
@@ -259,6 +297,35 @@ th {
   color: var(--ink);
 }
 
+.map-and-control-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.mower-table {
+  width: 100%;
+  cursor: pointer;
+}
+
+.mower-row {
+  transition: background-color 0.15s ease;
+}
+
+.mower-row:hover {
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.mower-row.row-selected {
+  background-color: var(--highlight-bg, rgba(78, 163, 255, 0.1));
+  font-weight: 500;
+}
+
+.mower-row.row-selected td {
+  color: var(--ink);
+}
+
 @media (max-width: 980px) {
   .tracking-header {
     display: grid;
@@ -266,7 +333,8 @@ th {
 
   .tracking-filters,
   .status-grid,
-  .charts-grid {
+  .charts-grid,
+  .map-and-control-grid {
     grid-template-columns: 1fr;
   }
 }
