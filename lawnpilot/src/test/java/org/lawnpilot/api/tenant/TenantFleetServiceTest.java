@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.lawnpilot.api.dto.FleetDto;
 import org.lawnpilot.api.dto.MowerDto;
+import org.lawnpilot.api.dto.MowerTelemetryDto;
 import org.lawnpilot.api.dto.TenantSimulationHistorySummaryDto;
 import org.lawnpilot.exceptions.RoleAuthorizationException;
 import org.lawnpilot.exceptions.TenantValidationException;
@@ -70,5 +71,25 @@ class TenantFleetServiceTest {
 
         assertEquals(2, alphaSummary.simulationRunCount());
         assertEquals(1, betaSummary.simulationRunCount());
+    }
+
+    @Test
+    void telemetryReturnsServerDrivenMowerStateAndSupportsFleetFilter() {
+        tenantFleetService.createFleet("tenant-alpha", TenantRole.ADMIN, "fleet-1", "alpha-fleet");
+        tenantFleetService.registerMower("tenant-alpha", TenantRole.ADMIN, "fleet-1", "mower-1", "model-a");
+        tenantFleetService.registerMower("tenant-alpha", TenantRole.ADMIN, "fleet-1", "mower-2", "model-b");
+
+        tenantFleetService.createFleet("tenant-alpha", TenantRole.ADMIN, "fleet-2", "beta-fleet");
+        tenantFleetService.registerMower("tenant-alpha", TenantRole.ADMIN, "fleet-2", "mower-9", "model-z");
+
+        List<MowerTelemetryDto> allTelemetry = tenantFleetService.listMowerTelemetry("tenant-alpha", TenantRole.VIEWER,
+                null);
+        List<MowerTelemetryDto> fleetTelemetry = tenantFleetService.listMowerTelemetry("tenant-alpha",
+                TenantRole.VIEWER, "fleet-1");
+
+        assertEquals(3, allTelemetry.size());
+        assertEquals(2, fleetTelemetry.size());
+        assertEquals("mower-1", fleetTelemetry.get(0).mowerId());
+        assertEquals("fleet-1", fleetTelemetry.get(0).fleetId());
     }
 }

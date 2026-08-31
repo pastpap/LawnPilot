@@ -8,6 +8,7 @@ class FleetState {
     private final String fleetId;
     private final String displayName;
     private final Map<String, MowerRegistration> mowers = new ConcurrentHashMap<>();
+    private final Map<String, MowerTelemetryState> mowerTelemetry = new ConcurrentHashMap<>();
 
     FleetState(String fleetId, String displayName) {
         this.fleetId = fleetId;
@@ -24,5 +25,9 @@ class FleetState {
 
     Map<String, MowerRegistration> mowers() {
         return mowers;
+    }
+
+    Map<String, MowerTelemetryState> mowerTelemetry() {
+        return mowerTelemetry;
     }
 }

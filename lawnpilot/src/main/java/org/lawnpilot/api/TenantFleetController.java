@@ -5,6 +5,7 @@ import org.lawnpilot.api.dto.FleetCreateRequestDto;
 import org.lawnpilot.api.dto.FleetDto;
 import org.lawnpilot.api.dto.MowerDto;
 import org.lawnpilot.api.dto.MowerRegisterRequestDto;
+import org.lawnpilot.api.dto.MowerTelemetryDto;
 import org.lawnpilot.api.dto.SimulationRequestDto;
 import org.lawnpilot.api.dto.SimulationResponseDto;
 import org.lawnpilot.api.dto.TenantSimulationHistorySummaryDto;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -67,6 +69,17 @@ public class TenantFleetController {
             @PathVariable String fleetId,
             @RequestHeader("X-Role") String roleHeader) {
         return tenantFleetService.listMowers(tenantId, TenantRole.fromHeader(roleHeader), fleetId);
+    }
+
+    @GetMapping("/telemetry/mowers")
+    public List<MowerTelemetryDto> listMowerTelemetry(
+            @PathVariable String tenantId,
+            @RequestHeader("X-Role") String roleHeader,
+            @RequestParam(required = false) String fleetId) {
+        return tenantFleetService.listMowerTelemetry(
+                tenantId,
+                TenantRole.fromHeader(roleHeader),
+                fleetId);
     }
 
     @PostMapping("/simulations")

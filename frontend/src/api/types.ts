@@ -27,6 +27,21 @@ export interface MowerDto {
     registeredAt: string;
 }
 
+export interface MowerTelemetryDto {
+    mowerId: string;
+    fleetId: string;
+    model: string;
+    status: string;
+    batteryPercent: number;
+    runtimeMinutesToday: number;
+    latitude: number;
+    longitude: number;
+    areaId: string;
+    areaName: string;
+    targetCoverageHa: number;
+    coverageTodayHa: number;
+}
+
 export interface TenantSimulationHistorySummaryDto {
     tenantId: string;
     simulationRunCount: number;

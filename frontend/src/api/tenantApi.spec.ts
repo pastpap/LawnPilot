@@ -4,6 +4,7 @@ import {
     createFleet,
     getSimulationHistorySummary,
     listFleets,
+    listMowerTelemetry,
     listMowers,
     registerMower,
     runTenantSimulation,
@@ -97,6 +98,35 @@ describe("tenantApi", () => {
         expect(mower.mowerId).toBe("mower-42");
         expect(simulation.outputLines).toEqual(["1 3 N", "5 1 E"]);
         expect(summary.simulationRunCount).toBe(4);
+    });
+
+    it("loads mower telemetry from backend endpoint", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(
+                JSON.stringify([
+                    {
+                        mowerId: "mower-1",
+                        fleetId: "fleet-1",
+                        model: "LP-X",
+                        status: "cutting",
+                        batteryPercent: 79,
+                        runtimeMinutesToday: 220,
+                        latitude: 47.621,
+                        longitude: -122.333,
+                        areaId: "fleet-1-area",
+                        areaName: "North Zone",
+                        targetCoverageHa: 10,
+                        coverageTodayHa: 8.4,
+                    },
+                ]),
+                { status: 200 },
+            ),
+        );
+
+        const telemetry = await listMowerTelemetry({ tenantId: "tenant-alpha", role: "VIEWER" });
+
+        expect(telemetry).toHaveLength(1);
+        expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/tenants/tenant-alpha/telemetry/mowers");
     });
 
     it("surfaces backend failures as ApiError with status", async () => {

@@ -1,11 +1,13 @@
 package org.lawnpilot.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.lawnpilot.api.dto.FleetDto;
+import org.lawnpilot.api.dto.MowerTelemetryDto;
 import org.lawnpilot.api.tenant.TenantFleetService;
 import org.lawnpilot.exceptions.RoleAuthorizationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import java.util.List;
 
 @WebMvcTest(controllers = TenantFleetController.class)
 class TenantFleetControllerTest {
@@ -66,5 +69,30 @@ class TenantFleetControllerTest {
                 .content("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\"}"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("{\"fleetId\":\"fleet-1\",\"displayName\":\"demo\",\"mowerCount\":0}"));
+    }
+
+    @Test
+    void telemetryEndpointReturnsPayload() throws Exception {
+        when(tenantFleetService.listMowerTelemetry(eq("tenant-alpha"), any(), eq("fleet-1")))
+                .thenReturn(List.of(new MowerTelemetryDto(
+                        "mower-1",
+                        "fleet-1",
+                        "LP-X",
+                        "cutting",
+                        74,
+                        210,
+                        47.621,
+                        -122.333,
+                        "fleet-1-area",
+                        "North Zone",
+                        10.0,
+                        8.4)));
+
+        mockMvc.perform(get("/api/v1/tenants/tenant-alpha/telemetry/mowers")
+                .header("X-Role", "VIEWER")
+                .queryParam("fleetId", "fleet-1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        "[{\"mowerId\":\"mower-1\",\"fleetId\":\"fleet-1\",\"model\":\"LP-X\",\"status\":\"cutting\",\"batteryPercent\":74,\"runtimeMinutesToday\":210,\"latitude\":47.621,\"longitude\":-122.333,\"areaId\":\"fleet-1-area\",\"areaName\":\"North Zone\",\"targetCoverageHa\":10.0,\"coverageTodayHa\":8.4}]"));
     }
 }

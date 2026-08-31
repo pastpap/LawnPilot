@@ -1,106 +1,97 @@
 import { mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouter, createMemoryHistory } from "vue-router";
 import App from "./App.vue";
-import { ApiError } from "./api/errors";
+import DashboardView from "./views/DashboardView.vue";
+import FleetView from "./views/FleetView.vue";
+import TrackingView from "./views/TrackingView.vue";
+import AnalyticsView from "./views/AnalyticsView.vue";
 
 const tenantApiMocks = vi.hoisted(() => ({
-    createFleet: vi.fn(),
-    getSimulationHistorySummary: vi.fn(),
-    listFleets: vi.fn(),
-    listMowers: vi.fn(),
-    registerMower: vi.fn(),
-    runTenantSimulation: vi.fn(),
+  createFleet: vi.fn(),
+  getSimulationHistorySummary: vi.fn(),
+  listFleets: vi.fn(),
+  listMowers: vi.fn(),
+  registerMower: vi.fn(),
+  runTenantSimulation: vi.fn(),
 }));
 
 vi.mock("./api/tenantApi", () => tenantApiMocks);
 
-async function flushUi(): Promise<void> {
-    await Promise.resolve();
-    await nextTick();
-    await Promise.resolve();
-    await nextTick();
+function createTestRouter() {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/", redirect: "/dashboard" },
+      { path: "/dashboard", component: DashboardView },
+      { path: "/fleet", component: FleetView },
+      { path: "/tracking", component: TrackingView },
+      { path: "/analytics", component: AnalyticsView },
+    ],
+  });
 }
 
-async function clickListFleets(wrapper: ReturnType<typeof mount>): Promise<void> {
-    const listFleetsButton = wrapper
-        .findAll("button")
-        .find((buttonWrapper) => buttonWrapper.text() === "List fleets");
-
-    if (!listFleetsButton) {
-        throw new Error("List fleets button not found.");
-    }
-
-    await listFleetsButton.trigger("click");
+async function flushUi(): Promise<void> {
+  await Promise.resolve();
+  await nextTick();
+  await Promise.resolve();
+  await nextTick();
 }
 
 describe("App", () => {
-    beforeEach(() => {
-        tenantApiMocks.createFleet.mockReset().mockResolvedValue({
-            fleetId: "fleet-1",
-            displayName: "North",
-            mowerCount: 0,
-        });
-        tenantApiMocks.getSimulationHistorySummary.mockReset().mockResolvedValue({
-            tenantId: "tenant-alpha",
-            simulationRunCount: 0,
-            lastSimulationRunAt: null,
-        });
-        tenantApiMocks.listFleets.mockReset().mockResolvedValue([]);
-        tenantApiMocks.listMowers.mockReset().mockResolvedValue([]);
-        tenantApiMocks.registerMower.mockReset().mockResolvedValue({
-            mowerId: "mower-1",
-            model: "LP-X",
-            registeredAt: "2026-08-31T10:00:00Z",
-        });
-        tenantApiMocks.runTenantSimulation.mockReset().mockResolvedValue({ outputLines: ["1 3 N"] });
+  beforeEach(() => {
+    tenantApiMocks.createFleet.mockReset().mockResolvedValue({
+      fleetId: "fleet-1",
+      displayName: "North",
+      mowerCount: 0,
     });
-
-    it("updates role display and status when role changes", async () => {
-        const wrapper = mount(App);
-
-        expect(wrapper.text()).toContain("Role: ADMIN");
-
-        await wrapper.get('select[aria-label="Role"]').setValue("OPERATOR");
-        await flushUi();
-
-        expect(wrapper.text()).toContain("Role: OPERATOR");
-        expect(wrapper.text()).toContain("Role set to OPERATOR.");
+    tenantApiMocks.getSimulationHistorySummary.mockReset().mockResolvedValue({
+      tenantId: "tenant-alpha",
+      simulationRunCount: 0,
+      lastSimulationRunAt: null,
     });
-
-    it("lists fleets through tenantApi and renders loaded fleet data", async () => {
-        tenantApiMocks.listFleets.mockResolvedValueOnce([
-            {
-                fleetId: "fleet-1",
-                displayName: "North Campus",
-                mowerCount: 2,
-            },
-        ]);
-
-        const wrapper = mount(App);
-
-        await clickListFleets(wrapper);
-        await flushUi();
-
-        expect(tenantApiMocks.listFleets).toHaveBeenCalledWith({
-            tenantId: "tenant-alpha",
-            role: "ADMIN",
-        });
-        expect(wrapper.text()).toContain("Loaded 1 fleet(s).");
-        expect(wrapper.text()).toContain("fleet-1 - North Campus (2 mower(s))");
+    tenantApiMocks.listFleets.mockReset().mockResolvedValue([]);
+    tenantApiMocks.listMowers.mockReset().mockResolvedValue([]);
+    tenantApiMocks.registerMower.mockReset().mockResolvedValue({
+      mowerId: "mower-1",
+      model: "LP-X",
+      registeredAt: "2026-08-31T10:00:00Z",
     });
+    tenantApiMocks.runTenantSimulation.mockReset().mockResolvedValue({ outputLines: ["1 3 N"] });
+  });
 
-    it("renders friendly backend errors for failed tenant actions", async () => {
-        tenantApiMocks.listFleets.mockRejectedValueOnce(
-            new ApiError(500, "Internal Server Error", "Database unavailable."),
-        );
+  it("renders clean tabs for dashboard, fleet, tracking, and analytics", async () => {
+    const router = createTestRouter();
+    const wrapper = mount(App, { global: { plugins: [router] } });
 
-        const wrapper = mount(App);
+    await flushUi();
 
-        await clickListFleets(wrapper);
-        await flushUi();
+    expect(wrapper.text()).toContain("Dashboard");
+    expect(wrapper.text()).toContain("Fleet");
+    expect(wrapper.text()).toContain("Tracking");
+    expect(wrapper.text()).toContain("Analytics");
+  });
 
-        expect(wrapper.text()).toContain("Backend error (500). Please retry in a moment.");
-        expect(wrapper.text()).toContain("Database unavailable.");
-    });
+  it("routes to tracking and shows the live tracking module", async () => {
+    const router = createTestRouter();
+    const wrapper = mount(App, { global: { plugins: [router] } });
+
+    await router.push("/tracking");
+    await flushUi();
+
+    expect(wrapper.text()).toContain("Live mower tracking");
+    expect(wrapper.text()).toContain("Tracked mowers");
+  });
+
+  it("routes to analytics and shows trend intelligence", async () => {
+    const router = createTestRouter();
+    const wrapper = mount(App, { global: { plugins: [router] } });
+
+    await router.push("/analytics");
+    await flushUi();
+
+    expect(wrapper.text()).toContain("Analytics and trend intelligence");
+    expect(wrapper.text()).toContain("Operational insights");
+  });
 });

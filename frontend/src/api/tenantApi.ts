@@ -4,6 +4,7 @@ import type {
     FleetDto,
     MowerDto,
     MowerRegisterRequestDto,
+    MowerTelemetryDto,
     SimulationRequestDto,
     SimulationResponseDto,
     TenantRole,
@@ -64,6 +65,19 @@ export async function listMowers(
 ): Promise<MowerDto[]> {
     return requestJson<MowerDto[]>(
         `${tenantPath(request.tenantId)}/fleets/${encodeURIComponent(request.fleetId)}/mowers`,
+        {
+            method: "GET",
+            headers: roleHeader(request.role),
+        },
+    );
+}
+
+export async function listMowerTelemetry(
+    request: TenantRequest & { fleetId?: string },
+): Promise<MowerTelemetryDto[]> {
+    const query = request.fleetId ? `?fleetId=${encodeURIComponent(request.fleetId)}` : "";
+    return requestJson<MowerTelemetryDto[]>(
+        `${tenantPath(request.tenantId)}/telemetry/mowers${query}`,
         {
             method: "GET",
             headers: roleHeader(request.role),
