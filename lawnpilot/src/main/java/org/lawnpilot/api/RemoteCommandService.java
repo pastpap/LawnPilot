@@ -19,13 +19,14 @@ import org.lawnpilot.exceptions.TenantValidationException;
  * Manages remote command submission with safety guardrails:
  * - Role-based authorization (OPERATOR and ADMIN only)
  * - Command envelope validation (TTL, commandId, correlationId)
- * - Idempotency tracking per tenant (duplicate commandIds return cached results)
+ * - Idempotency tracking per tenant (duplicate commandIds return cached
+ * results)
  * - Tenant isolation of command history and execution
  */
 public class RemoteCommandService {
 
     private final TenantFleetService tenantFleetService;
-    
+
     // Per-tenant command idempotency store: tenantId -> (commandId -> result)
     private final Map<String, Map<String, RemoteCommandResultDto>> commandCache = new ConcurrentHashMap<>();
 
@@ -37,20 +38,19 @@ public class RemoteCommandService {
      * Send a remote command to a mower.
      * 
      * @param tenantId tenant identifier
-     * @param role requester's role
-     * @param fleetId target fleet
-     * @param command remote command envelope
+     * @param role     requester's role
+     * @param fleetId  target fleet
+     * @param command  remote command envelope
      * @return Optional containing command result if successful
      * @throws RoleAuthorizationException if role cannot send commands
-     * @throws TenantValidationException if tenantId is invalid
-     * @throws IllegalArgumentException if command envelope is invalid or stale
+     * @throws TenantValidationException  if tenantId is invalid
+     * @throws IllegalArgumentException   if command envelope is invalid or stale
      */
     public Optional<RemoteCommandResultDto> sendCommand(
             String tenantId,
             TenantRole role,
             String fleetId,
-            RemoteCommandDto command
-    ) {
+            RemoteCommandDto command) {
         // Validate tenant
         String normalized = tenantId != null ? tenantId.trim() : "";
         if (normalized.isEmpty()) {
@@ -60,8 +60,7 @@ public class RemoteCommandService {
         // Validate role has permission (OPERATOR and ADMIN can send commands)
         if (role == TenantRole.VIEWER) {
             throw new RoleAuthorizationException(
-                    "Role 'VIEWER' is not allowed to send remote commands. Required role: OPERATOR or ADMIN."
-            );
+                    "Role 'VIEWER' is not allowed to send remote commands. Required role: OPERATOR or ADMIN.");
         }
 
         // Validate command envelope
@@ -86,8 +85,7 @@ public class RemoteCommandService {
                 "PENDING",
                 Instant.now(),
                 null,
-                null
-        );
+                null);
 
         tenantCache.put(command.commandId(), result);
         return Optional.of(result);
@@ -112,12 +110,10 @@ public class RemoteCommandService {
 
         // Validate command type is known
         Set<String> validCommandTypes = Set.of(
-                "MOVE_FORWARD", "TURN_LEFT", "TURN_RIGHT", "STOP", "PAUSE", "RESUME"
-        );
+                "MOVE_FORWARD", "TURN_LEFT", "TURN_RIGHT", "STOP", "PAUSE", "RESUME");
         if (!validCommandTypes.contains(command.commandType())) {
             throw new IllegalArgumentException(
-                    "Invalid command type '" + command.commandType() + "'. Allowed types: " + validCommandTypes
-            );
+                    "Invalid command type '" + command.commandType() + "'. Allowed types: " + validCommandTypes);
         }
 
         // Validate expiry is in the future
@@ -127,10 +123,17 @@ public class RemoteCommandService {
     }
 
     private void validateMowerExists(String tenantId, TenantRole role, String fleetId, String mowerId) {
-        // For now, this just validates the mower ID format and that it belongs to the fleet
-        // In the full implementation, this would query the mower from the fleet
-        if (mowerId == null || !mowerId.matches("[a-zA-Z0-9_-]+")) {
+        if (mowerId == null || mowerId.isEmpty() || !mowerId.matches("[a-zA-Z0-9_-]+")) {
             throw new IllegalArgumentException("Invalid mower ID format");
+        }
+
+        // Verify mower actually exists in the tenant's fleet
+        var mowers = tenantFleetService.listMowers(tenantId, role, fleetId);
+        boolean mowerExists = mowers.stream()
+                .anyMatch(m -> m.mowerId().equals(mowerId));
+
+        if (!mowerExists) {
+            throw new IllegalArgumentException("Mower '" + mowerId + "' not found in fleet '" + fleetId + "'");
         }
     }
 }

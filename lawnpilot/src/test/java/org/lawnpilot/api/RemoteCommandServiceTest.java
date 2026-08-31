@@ -22,7 +22,8 @@ import org.lawnpilot.exceptions.TenantValidationException;
  * Phase 7 Regression Test: Remote Command Guardrails and Safety Gates
  * 
  * Tests validate:
- * - Role-based command restrictions (OPERATOR only, not VIEWER/ADMIN restrictions)
+ * - Role-based command restrictions (OPERATOR only, not VIEWER/ADMIN
+ * restrictions)
  * - Command envelope validation (commandId, sequence, correlationId, expiry)
  * - Invalid/stale command rejection
  * - Safe command execution and idempotency enforcement
@@ -37,7 +38,7 @@ class RemoteCommandServiceTest {
     void setUp() {
         tenantFleetService = new TenantFleetService(new InMemoryTenantFleetRepository());
         remoteCommandService = new RemoteCommandService(tenantFleetService);
-        
+
         // Setup: Create tenant, fleet, and mower
         tenantFleetService.createFleet("tenant-alpha", TenantRole.ADMIN, "fleet-1", "Fleet Alpha");
         tenantFleetService.registerMower("tenant-alpha", TenantRole.ADMIN, "fleet-1", "mower-1", "LP-X");
@@ -53,8 +54,7 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
         Optional<RemoteCommandResultDto> result = remoteCommandService.sendCommand(
                 "tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd);
@@ -71,13 +71,11 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
-        assertThrows(RoleAuthorizationException.class, () ->
-                remoteCommandService.sendCommand("tenant-alpha", TenantRole.VIEWER, "fleet-1", cmd),
-                "VIEWER should not be able to send commands"
-        );
+        assertThrows(RoleAuthorizationException.class,
+                () -> remoteCommandService.sendCommand("tenant-alpha", TenantRole.VIEWER, "fleet-1", cmd),
+                "VIEWER should not be able to send commands");
     }
 
     @Test
@@ -89,8 +87,7 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
         Optional<RemoteCommandResultDto> result = remoteCommandService.sendCommand(
                 "tenant-alpha", TenantRole.ADMIN, "fleet-1", cmd);
@@ -109,13 +106,11 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().minusSeconds(10)
-        );
+                Instant.now().minusSeconds(10));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", staleCmd),
-                "Expired command should be rejected"
-        );
+        assertThrows(IllegalArgumentException.class,
+                () -> remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", staleCmd),
+                "Expired command should be rejected");
     }
 
     @Test
@@ -126,13 +121,11 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd),
-                "Command for non-existent mower should be rejected"
-        );
+        assertThrows(IllegalArgumentException.class,
+                () -> remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd),
+                "Command for non-existent mower should be rejected");
     }
 
     @Test
@@ -143,13 +136,11 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 null, // missing correlationId
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd),
-                "Command without correlationId should be rejected"
-        );
+        assertThrows(IllegalArgumentException.class,
+                () -> remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd),
+                "Command without correlationId should be rejected");
     }
 
     @Test
@@ -160,13 +151,11 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd),
-                "Command without commandId should be rejected"
-        );
+        assertThrows(IllegalArgumentException.class,
+                () -> remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd),
+                "Command without commandId should be rejected");
     }
 
     // --- Idempotency Tests ---
@@ -180,8 +169,7 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
         Optional<RemoteCommandResultDto> result1 = remoteCommandService.sendCommand(
                 "tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd);
@@ -208,8 +196,7 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
         Optional<RemoteCommandResultDto> alphaResult = remoteCommandService.sendCommand(
                 "tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd);
@@ -230,13 +217,11 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
-        assertThrows(TenantValidationException.class, () ->
-                remoteCommandService.sendCommand("   ", TenantRole.OPERATOR, "fleet-1", cmd),
-                "Blank tenant ID should be rejected"
-        );
+        assertThrows(TenantValidationException.class,
+                () -> remoteCommandService.sendCommand("   ", TenantRole.OPERATOR, "fleet-1", cmd),
+                "Blank tenant ID should be rejected");
     }
 
     // --- Command Sequence Tests ---
@@ -251,8 +236,7 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 1,
                 correlationId,
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
         RemoteCommandDto cmd2 = new RemoteCommandDto(
                 UUID.randomUUID().toString(),
@@ -260,8 +244,7 @@ class RemoteCommandServiceTest {
                 "MOVE_FORWARD",
                 2,
                 correlationId,
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
         Optional<RemoteCommandResultDto> result1 = remoteCommandService.sendCommand(
                 "tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd1);
@@ -284,12 +267,10 @@ class RemoteCommandServiceTest {
                 "INVALID_COMMAND_TYPE",
                 1,
                 UUID.randomUUID().toString(),
-                Instant.now().plusSeconds(60)
-        );
+                Instant.now().plusSeconds(60));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd),
-                "Invalid command type should be rejected"
-        );
+        assertThrows(IllegalArgumentException.class,
+                () -> remoteCommandService.sendCommand("tenant-alpha", TenantRole.OPERATOR, "fleet-1", cmd),
+                "Invalid command type should be rejected");
     }
 }

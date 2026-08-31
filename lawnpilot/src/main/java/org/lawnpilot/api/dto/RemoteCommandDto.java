@@ -5,12 +5,15 @@ import java.time.Instant;
 /**
  * Remote Command Envelope (Phase 7)
  * 
- * Represents a command sent to a mower for remote execution with safety properties:
+ * Represents a command sent to a mower for remote execution with safety
+ * properties:
  * - commandId: Unique identifier for idempotency tracking
  * - mowerId: Target mower within the fleet
- * - commandType: Supported command type (MOVE_FORWARD, TURN_LEFT, TURN_RIGHT, STOP, PAUSE, RESUME)
+ * - commandType: Supported command type (MOVE_FORWARD, TURN_LEFT, TURN_RIGHT,
+ * STOP, PAUSE, RESUME)
  * - sequence: Sequence number within a correlation group for ordering
- * - correlationId: Groups related commands together (e.g., a multi-command override session)
+ * - correlationId: Groups related commands together (e.g., a multi-command
+ * override session)
  * - expiresAt: TTL after which command is stale and rejected
  */
 public record RemoteCommandDto(
@@ -19,6 +22,5 @@ public record RemoteCommandDto(
         String commandType,
         int sequence,
         String correlationId,
-        Instant expiresAt
-) {
+        Instant expiresAt) {
 }

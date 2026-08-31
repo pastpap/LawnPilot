@@ -119,7 +119,8 @@ public class TenantFleetController {
                         request.targetParameter(),
                         request.overrideGuardrails(),
                         request.requestedBy()));
-        return new org.lawnpilot.api.dto.CommandResponseDto(commandId, "QUEUED", "Command accepted and queued for execution");
+        return new org.lawnpilot.api.dto.CommandResponseDto(commandId, "QUEUED",
+                "Command accepted and queued for execution");
     }
 
     @GetMapping("/fleets/{fleetId}/mowers/{mowerId}/commands/{commandId}")
@@ -168,4 +169,3 @@ public class TenantFleetController {
                 mowerId);
     }
 }
-

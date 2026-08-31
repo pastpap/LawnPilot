@@ -165,7 +165,9 @@ function getCommandStatusColor(status: string): string {
         <div class="stat">
           <span class="label">Coverage:</span>
           <span class="value"
-            >{{ mower.coverageTodayHa.toFixed(2) }}/{{ mower.targetCoverageHa.toFixed(2) }}
+            >{{ mower.coverageTodayHa.toFixed(2) }}/{{
+              mower.targetCoverageHa.toFixed(2)
+            }}
             ha</span
           >
         </div>
@@ -205,17 +207,29 @@ function getCommandStatusColor(status: string): string {
 
     <!-- Command History Toggle -->
     <div class="history-section">
-      <button class="history-toggle" @click="showCommandHistory = !showCommandHistory">
+      <button
+        class="history-toggle"
+        @click="showCommandHistory = !showCommandHistory"
+      >
         {{ showCommandHistory ? "Hide" : "Show" }} Command History
       </button>
 
       <!-- Command History -->
-      <div v-if="showCommandHistory && commandHistory.length > 0" class="command-history">
+      <div
+        v-if="showCommandHistory && commandHistory.length > 0"
+        class="command-history"
+      >
         <div class="history-title">Recent Commands</div>
-        <div v-for="cmd in commandHistory.slice(0, 5)" :key="cmd.commandId" class="history-item">
+        <div
+          v-for="cmd in commandHistory.slice(0, 5)"
+          :key="cmd.commandId"
+          class="history-item"
+        >
           <div class="history-header">
             <span class="command-type">{{ cmd.commandType }}</span>
-            <span class="history-time">{{ formatTimestamp(cmd.createdAt) }}</span>
+            <span class="history-time">{{
+              formatTimestamp(cmd.createdAt)
+            }}</span>
           </div>
           <div :class="['history-status', getCommandStatusColor(cmd.status)]">
             {{ cmd.status }}
@@ -225,13 +239,16 @@ function getCommandStatusColor(status: string): string {
           </div>
         </div>
       </div>
-      <div v-else-if="showCommandHistory" class="no-history">No command history available</div>
+      <div v-else-if="showCommandHistory" class="no-history">
+        No command history available
+      </div>
     </div>
 
     <!-- Safety Notice -->
     <div class="safety-notice">
-      <strong>⚠️ Safety Notice:</strong> Commands are applied with operator validation. OVERRIDE
-      commands are audited and may require additional approval.
+      <strong>⚠️ Safety Notice:</strong> Commands are applied with operator
+      validation. OVERRIDE commands are audited and may require additional
+      approval.
     </div>
   </div>
   <div v-else class="no-mower-selected">

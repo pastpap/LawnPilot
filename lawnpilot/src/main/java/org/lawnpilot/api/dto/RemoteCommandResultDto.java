@@ -19,6 +19,5 @@ public record RemoteCommandResultDto(
         String status,
         Instant receivedAt,
         Instant executedAt,
-        String errorMessage
-) {
+        String errorMessage) {
 }

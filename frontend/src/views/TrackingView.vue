@@ -34,7 +34,9 @@ const mapMowers = computed(() => {
 
 const selectedMower = computed(() => {
   if (!selectedMowerId.value) return null;
-  return mapMowers.value.find((m) => m.mowerId === selectedMowerId.value) || null;
+  return (
+    mapMowers.value.find((m) => m.mowerId === selectedMowerId.value) || null
+  );
 });
 
 const activeMowers = computed(
@@ -71,7 +73,10 @@ watch(
 );
 
 watch(mapMowers, () => {
-  if (selectedMowerId.value && !mapMowers.value.some((m) => m.mowerId === selectedMowerId.value)) {
+  if (
+    selectedMowerId.value &&
+    !mapMowers.value.some((m) => m.mowerId === selectedMowerId.value)
+  ) {
     selectedMowerId.value = null;
   }
 });

@@ -311,7 +311,7 @@ public class TenantFleetService {
 
         // Evaluate guardrails
         GuardrailOutcome guardrailOutcome = evaluateGuardrails(normalizedMowerId, request.targetParameter());
-        
+
         if (guardrailOutcome.isFailed() && !request.overrideGuardrails()) {
             throw new GuardrailViolationException(
                     "Command rejected: " + guardrailOutcome.failureReason(),
@@ -365,7 +365,7 @@ public class TenantFleetService {
     private GuardrailOutcome evaluateGuardrails(String mowerId, String targetParameter) {
         // Placeholder: In production, check mower state from telemetry
         // For now, all commands pass guardrails (safe for testing)
-        
+
         if (targetParameter == null || targetParameter.isBlank()) {
             return GuardrailOutcome.fail("Target parameter cannot be blank", "INVALID_TARGET");
         }
@@ -456,7 +456,7 @@ public class TenantFleetService {
                     "Mower '" + normalizedMowerId + "' does not exist in fleet '" + normalizedFleetId + "'.");
         }
 
-        String eventId = "evt-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000);
+        String eventId = "evt-" + System.currentTimeMillis() + "-" + (int) (Math.random() * 10000);
         TelemetryEvent event = TelemetryEvent.of(
                 eventId,
                 normalizedMowerId,
@@ -489,7 +489,7 @@ public class TenantFleetService {
             return;
         }
 
-        String eventId = "evt-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000);
+        String eventId = "evt-" + System.currentTimeMillis() + "-" + (int) (Math.random() * 10000);
         TelemetryEvent event = TelemetryEvent.commandRelated(
                 eventId,
                 mowerId,
@@ -552,4 +552,3 @@ public class TenantFleetService {
                 .toList();
     }
 }
-

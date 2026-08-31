@@ -44,7 +44,8 @@ public class ApiExceptionHandler {
     @ExceptionHandler(GuardrailViolationException.class)
     public ResponseEntity<String> handleGuardrailViolation(GuardrailViolationException ex) {
         // Return 422 (Unprocessable Entity) for guardrail violations
-        // This indicates the request is well-formed but semantically invalid due to safety constraints
+        // This indicates the request is well-formed but semantically invalid due to
+        // safety constraints
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ex.getMessage());
     }
 }
