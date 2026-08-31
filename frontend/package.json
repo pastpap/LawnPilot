@@ -1,0 +1,28 @@
+{
+    "name": "lawnpilot-frontend",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "predev": "npm run generate:api",
+        "build": "vue-tsc --noEmit && vite build",
+        "prebuild": "npm run generate:api",
+        "test": "vitest run",
+        "generate:api": "node ./scripts/generate-api.mjs"
+    },
+    "dependencies": {
+        "openapi-fetch": "^0.13.8",
+        "vue": "^3.5.18"
+    },
+    "devDependencies": {
+        "@types/node": "^24.3.0",
+        "@vitejs/plugin-vue": "^5.1.4",
+        "openapi-typescript": "^7.5.2",
+        "typescript": "^5.9.2",
+        "vite": "^5.4.3",
+        "vitest": "^2.1.1",
+        "vue-tsc": "^2.1.6",
+        "wait-on": "^8.0.1"
+    }
+}
