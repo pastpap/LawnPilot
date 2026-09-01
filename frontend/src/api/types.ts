@@ -8,17 +8,44 @@ export type SimulationResponseDto = components["schemas"]["SimulationResponseDto
 export interface FleetCreateRequestDto {
     fleetId: string;
     displayName: string;
+    areaId?: string;
+    areaName?: string;
+    areaGeometryType?: "CIRCLE";
+    areaCenterLat?: number;
+    areaCenterLng?: number;
+    areaRadiusMeters?: number;
+}
+
+export interface FleetUpdateRequestDto {
+    displayName: string;
+    areaId?: string;
+    areaName?: string;
+    areaGeometryType?: "CIRCLE";
+    areaCenterLat?: number;
+    areaCenterLng?: number;
+    areaRadiusMeters?: number;
 }
 
 export interface FleetDto {
     fleetId: string;
     displayName: string;
     mowerCount: number;
+    areaCenterLat?: number;
+    areaCenterLng?: number;
+    areaRadiusMeters?: number;
 }
 
 export interface MowerRegisterRequestDto {
     mowerId: string;
     model: string;
+    simulated?: boolean;
+    startLatitude?: number;
+    startLongitude?: number;
+}
+
+export interface MowerUpdateRequestDto {
+    model: string;
+    fleetId?: string;
 }
 
 export interface MowerDto {

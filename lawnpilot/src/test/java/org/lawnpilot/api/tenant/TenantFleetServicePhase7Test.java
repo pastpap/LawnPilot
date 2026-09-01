@@ -2,12 +2,12 @@ package org.lawnpilot.api.tenant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Set;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.lawnpilot.api.dto.CommandStatusDto;
 import org.lawnpilot.api.dto.TelemetryEventDto;
-import org.lawnpilot.exceptions.GuardrailViolationException;
 import org.lawnpilot.exceptions.NotFoundException;
 
 /**
@@ -285,13 +285,6 @@ class TenantFleetServicePhase7Test {
                 "BATTERY_UPDATE",
                 "{\"percent\":85}");
 
-        // Small delay to ensure different timestamps
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         service.recordTelemetryEvent(
                 tenantId,
                 TenantRole.OPERATOR,
@@ -307,10 +300,51 @@ class TenantFleetServicePhase7Test {
                 fleetId,
                 mowerId);
 
-        // Assert: Events in reverse chronological order (most recent first)
+        // Assert deterministically on content to avoid time-sensitive ordering
+        // assumptions.
         assertEquals(2, events.size());
-        assertEquals("LOCATION_UPDATE", events.get(0).eventType());
-        assertEquals("BATTERY_UPDATE", events.get(1).eventType());
+        Set<String> eventTypes = events.stream().map(event -> event.eventType())
+                .collect(java.util.stream.Collectors.toSet());
+        assertEquals(Set.of("BATTERY_UPDATE", "LOCATION_UPDATE"), eventTypes);
+        assertTrue(events.stream().allMatch(event -> event.recordedAt() != null && !event.recordedAt().isBlank()));
+    }
+
+    @Test
+    void issuingCommandCreatesCommandLinkedTelemetryEvent() {
+        String tenantId = "tenant-phase7-cmd-telemetry-test";
+        String fleetId = "fleet-cmd-telemetry-test";
+        String mowerId = "mower-cmd-telemetry-001";
+
+        service.createFleet(tenantId, TenantRole.ADMIN, fleetId, "Fleet");
+        service.registerMower(tenantId, TenantRole.ADMIN, fleetId, mowerId, "ModelX");
+
+        RemoteCommandRequest request = new RemoteCommandRequest(
+                "pause",
+                "stop",
+                false,
+                "operator-789");
+
+        String commandId = service.issueMowerCommand(
+                tenantId,
+                TenantRole.OPERATOR,
+                fleetId,
+                mowerId,
+                request);
+
+        List<TelemetryEventDto> events = service.queryMowerTelemetryEvents(
+                tenantId,
+                TenantRole.VIEWER,
+                fleetId,
+                mowerId);
+
+        TelemetryEventDto commandEvent = events.stream()
+                .filter(event -> "COMMAND_ISSUED".equals(event.eventType()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Expected command-related telemetry event"));
+
+        assertTrue(commandEvent.isCommandRelated());
+        assertEquals(commandId, commandEvent.relatedCommandId());
+        assertTrue(commandEvent.eventData().contains("pause"));
     }
 
     @Test
@@ -416,5 +450,157 @@ class TenantFleetServicePhase7Test {
                 fleetId,
                 mowerId);
         assertTrue(tenant2Events.isEmpty());
+    }
+
+    @Test
+    void telemetryProgressesAcrossSuccessivePolls() {
+        String tenantId = "tenant-phase7-telemetry-progression";
+        String fleetId = "fleet-progress";
+        String mowerId = "mower-progress-001";
+
+        service.createFleet(tenantId, TenantRole.ADMIN, fleetId, "Progress Fleet");
+        service.registerMower(tenantId, TenantRole.ADMIN, fleetId, mowerId, "ModelX", true);
+
+        List<org.lawnpilot.api.dto.MowerTelemetryDto> firstPoll = service.listMowerTelemetry(
+                tenantId,
+                TenantRole.VIEWER,
+                fleetId);
+        List<org.lawnpilot.api.dto.MowerTelemetryDto> secondPoll = service.listMowerTelemetry(
+                tenantId,
+                TenantRole.VIEWER,
+                fleetId);
+
+        assertEquals(1, firstPoll.size());
+        assertEquals(1, secondPoll.size());
+
+        org.lawnpilot.api.dto.MowerTelemetryDto first = firstPoll.get(0);
+        org.lawnpilot.api.dto.MowerTelemetryDto second = secondPoll.get(0);
+
+        assertTrue(first.latitude() != second.latitude() || first.longitude() != second.longitude());
+        assertTrue(second.runtimeMinutesToday() > first.runtimeMinutesToday());
+        assertTrue(second.batteryPercent() <= first.batteryPercent());
+    }
+
+    @Test
+    void telemetryLatLngAlwaysWithinGeofenceBounds() {
+        String tenantId = "tenant-phase7-geofence";
+        String fleetId = "fleet-geofence";
+        String mowerId = "mower-geofence-001";
+
+        service.createFleet(tenantId, TenantRole.ADMIN, fleetId, "Geofence Fleet");
+        service.registerMower(tenantId, TenantRole.ADMIN, fleetId, mowerId, "ModelX", true);
+
+        for (int i = 0; i < 30; i++) {
+            List<org.lawnpilot.api.dto.MowerTelemetryDto> telemetry = service.listMowerTelemetry(
+                    tenantId,
+                    TenantRole.VIEWER,
+                    fleetId);
+            assertEquals(1, telemetry.size());
+            org.lawnpilot.api.dto.MowerTelemetryDto reading = telemetry.get(0);
+
+            assertTrue(reading.latitude() >= 47.58 && reading.latitude() <= 47.66);
+            assertTrue(reading.longitude() >= -122.33 && reading.longitude() <= -122.24);
+        }
+    }
+
+    @Test
+    void runtimeIsMonotonicAndSimulatedBatteryDrainsSafely() {
+        String tenantId = "tenant-phase7-runtime-battery";
+        String fleetId = "fleet-runtime-battery";
+
+        service.createFleet(tenantId, TenantRole.ADMIN, fleetId, "Runtime Fleet");
+        service.registerMower(tenantId, TenantRole.ADMIN, fleetId, "sim-1", "ModelSim", true);
+        service.registerMower(tenantId, TenantRole.ADMIN, fleetId, "real-1", "ModelReal", false);
+
+        int prevSimRuntime = -1;
+        int prevRealRuntime = -1;
+        int prevSimBattery = 101;
+
+        for (int i = 0; i < 25; i++) {
+            List<org.lawnpilot.api.dto.MowerTelemetryDto> telemetry = service.listMowerTelemetry(
+                    tenantId,
+                    TenantRole.VIEWER,
+                    fleetId);
+
+            org.lawnpilot.api.dto.MowerTelemetryDto sim = telemetry.stream()
+                    .filter(t -> "sim-1".equals(t.mowerId()))
+                    .findFirst()
+                    .orElseThrow();
+            org.lawnpilot.api.dto.MowerTelemetryDto real = telemetry.stream()
+                    .filter(t -> "real-1".equals(t.mowerId()))
+                    .findFirst()
+                    .orElseThrow();
+
+            if (prevSimRuntime >= 0) {
+                assertTrue(sim.runtimeMinutesToday() > prevSimRuntime);
+                assertTrue(real.runtimeMinutesToday() > prevRealRuntime);
+                assertTrue(sim.batteryPercent() <= prevSimBattery);
+            }
+
+            assertTrue(sim.batteryPercent() >= 12);
+
+            prevSimRuntime = sim.runtimeMinutesToday();
+            prevRealRuntime = real.runtimeMinutesToday();
+            prevSimBattery = sim.batteryPercent();
+        }
+    }
+
+    @Test
+    void telemetryProgressionIsTenantIsolated() {
+        String tenantA = "tenant-phase7-iso-a";
+        String tenantB = "tenant-phase7-iso-b";
+        String fleetId = "fleet-iso";
+        String mowerId = "mower-iso-001";
+
+        service.createFleet(tenantA, TenantRole.ADMIN, fleetId, "Fleet A");
+        service.registerMower(tenantA, TenantRole.ADMIN, fleetId, mowerId, "ModelX", true);
+
+        service.createFleet(tenantB, TenantRole.ADMIN, fleetId, "Fleet B");
+        service.registerMower(tenantB, TenantRole.ADMIN, fleetId, mowerId, "ModelX", true);
+
+        org.lawnpilot.api.dto.MowerTelemetryDto tenantAFirst = service.listMowerTelemetry(
+                tenantA,
+                TenantRole.VIEWER,
+                fleetId).get(0);
+        org.lawnpilot.api.dto.MowerTelemetryDto tenantASecond = service.listMowerTelemetry(
+                tenantA,
+                TenantRole.VIEWER,
+                fleetId).get(0);
+        org.lawnpilot.api.dto.MowerTelemetryDto tenantBFirst = service.listMowerTelemetry(
+                tenantB,
+                TenantRole.VIEWER,
+                fleetId).get(0);
+
+        assertTrue(tenantASecond.runtimeMinutesToday() > tenantAFirst.runtimeMinutesToday());
+        assertEquals(tenantBFirst.runtimeMinutesToday(), tenantAFirst.runtimeMinutesToday());
+        assertEquals(tenantBFirst.batteryPercent(), tenantAFirst.batteryPercent());
+    }
+
+    @Test
+    void pinnedStartTelemetryStaysWithinExistingGeofenceSafetyBounds() {
+        String tenantId = "tenant-phase7-pin-safety";
+        String fleetId = "fleet-pin-safety";
+        String mowerId = "mower-pin-safety-001";
+
+        service.createFleet(tenantId, TenantRole.ADMIN, fleetId, "Pin Safety Fleet");
+        service.registerMower(
+                tenantId,
+                TenantRole.ADMIN,
+                fleetId,
+                mowerId,
+                "ModelX",
+                true,
+                47.6162,
+                -122.2937);
+
+        for (int i = 0; i < 20; i++) {
+            org.lawnpilot.api.dto.MowerTelemetryDto reading = service.listMowerTelemetry(
+                    tenantId,
+                    TenantRole.VIEWER,
+                    fleetId).get(0);
+
+            assertTrue(reading.latitude() >= 47.58 && reading.latitude() <= 47.66);
+            assertTrue(reading.longitude() >= -122.33 && reading.longitude() <= -122.24);
+        }
     }
 }

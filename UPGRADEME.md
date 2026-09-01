@@ -289,52 +289,52 @@ Architectural notes:
 - Telemetry replay is a diagnostics feature (operators can verify command→telemetry causality) but not a blocking gate.
 - Existing simulation engine and traces (Phase 4) are orthogonal; Phase 7 commands operate on **registered mower fleet state**, not simulation input/output.
 
-Completion update (2026-08-31): **Frontend Layer implementation complete (Dallas, 2026-08-31T22:05:51+0200). Backend Layer implementation pending.**
+Completion update (2026-08-31): **Phase 7 telemetry progression + water clamp completed and validated (backend + frontend).**
 
-Frontend implementation summary:
+Implementation summary:
 
-7. **Fleet Health Monitoring View:**
-   - AnalyticsView.vue structure ready (pre-existing); Phase 7 telemetry integration points identified for future backend API calls.
-8. **Mower Command Control View - IMPLEMENTED:**
-   - Created `MowerControlPanel.vue` component (310 lines) with PAUSE/RESUME/RETURN_HOME/OVERRIDE command buttons.
-   - Integrated into TrackingView.vue with clickable mower selection (table rows and map markers).
-   - Command safety guardrails: PAUSE disabled when already paused, RESUME only enabled when paused, RETURN_HOME disabled when charging, OVERRIDE disabled in maintenance.
-   - Visual feedback: success/error alerts, command history display (last 5 commands), role-appropriate button disabling.
-   - Responsive layout: 2:1 grid (map : control panel) on desktop, stacks on mobile.
+1. **Backend layer - IMPLEMENTED:**
+   - Added tenant/fleet/mower-scoped command and telemetry contracts and service flows.
+   - Added role-checked command handling with guardrail-aware validation paths.
+   - Added simulated mower registration support through mower registration contracts.
+   - Simulated mower onboarding now initializes mower state as active/mowing-ready immediately after registration.
 
-9. **Telemetry Integration - IMPLEMENTED:**
-   - Extended `tenantApi.ts` with `sendMowerCommand()` and `getMowerCommandHistory()` functions.
-   - Added type definitions: `MowerCommandType`, `MowerCommandRequestDto`, `MowerCommandResultDto`.
-   - Full role-based access control via X-Role header (ADMIN, OPERATOR, VIEWER).
-   - Generated API types ready for backend endpoint discovery via OpenAPI.
+2. **Frontend layer - IMPLEMENTED:**
+   - Added `MowerControlPanel.vue` with PAUSE/RESUME/RETURN_HOME/OVERRIDE controls and result feedback.
+   - Integrated control panel into `TrackingView.vue` with mower selection and command history display.
+   - Extended `tenantApi.ts` and API types for command submission/history.
+   - Added simulated mower selection in mower registration flow (`FleetView.vue`) and payload wiring.
+   - After successful simulated registration, telemetry/UI state updates immediately so the mower appears active.
 
-Test coverage:
+3. **Edge simulator layer - IMPLEMENTED:**
+   - Added standalone local service under `edge-sim/`.
+   - Simulator loads seeded mower set and starts one telemetry stream per mower.
+   - Periodically emits realistic IoT-style telemetry (status, battery, runtime, coverage, coordinates).
+   - Added root-level run wiring and simulator usage docs.
 
-- Frontend test suite: **40/40 PASS** ✅
-  - MowerControlPanel.spec.ts: 12 tests covering command submission, status-based disabling, error handling, history loading.
-  - tenantApi.spec.ts: 3 new tests for command endpoints (send, history retrieval, metadata).
-  - All existing 27 tests remain passing (behavior regression check).
+4. **Telemetry seed/map realism updates - IMPLEMENTED:**
+   - Reworked seeded mower coordinates in frontend telemetry data to cluster in plausible park/garden zones.
+   - Added deterministic coordinate sanity tests to prevent random/outlier placements (for example water-canal-like points).
 
-Verification notes (Frontend Layer):
+5. **Telemetry progression and clamp hardening - IMPLEMENTED:**
+   - Backend telemetry progression now advances deterministically from ingested snapshots so fleet trend calculations and replay behavior remain stable across identical inputs.
+   - Backend geofence/water-drift safety clamp now constrains mower position updates to valid in-bounds, non-water coordinates before state persistence.
+   - Frontend telemetry ingestion path now applies clamp safeguards before rendering or state updates to prevent out-of-bounds/water-drift points from polluting UI trends.
 
-- Executed test command: `cd frontend && npm test -- --run`
-- Result: **PASS - 40 tests, 0 failures** ✅
-- Component evidence: MowerControlPanel.vue implements all 8 command control requirements with full safety guardrail logic.
-- Integration evidence: TrackingView.vue enhanced with mower selection UI (clickable rows, visual highlight), control panel conditional rendering.
-- Type safety: All new API functions fully typed via TypeScript with generated schema integration.
-- Styling: Dark mode compatible, light/dark visual consistency preserved, responsive design validated.
-- Accessibility: Button labels, role hints, error messages clear and actionable.
+Verification notes:
+
+- Backend verification: `cd lawnpilot && ./gradlew test` => BUILD SUCCESSFUL.
+- Frontend verification: `npm --prefix frontend test` => 47/47 passing.
+- Frontend build verification: `npm --prefix frontend run build` => successful.
 
 Architectural notes:
 
-- Frontend is ready for backend Phase 7 API endpoints (stubbed in TypeScript signatures).
-- Control panel state management is component-local (no global Vuex/Pinia needed for Phase 7 MVP).
-- Command result polling/WebSocket integration deferred to Phase 8+ (current design supports future async updates).
-- Role-based visibility (VIEWER hides action buttons) enforced client-side; server validates authz.
+- Phase 7 remains tenant-isolated end-to-end (tenant/fleet/mower scoping in APIs and simulator emissions).
+- Command and telemetry state are still in-memory buffers for this phase and are suitable for persistence promotion in Phase 8+.
+- Control panel state remains component-local by design; async command streaming (polling/WebSocket) is deferred to Phase 8+.
 
 Next phase dependencies:
 
-- Backend must implement: `/api/v1/tenants/{tenantId}/fleets/{fleetId}/mowers/{mowerId}/commands` endpoints.
-- Backend must return `MowerCommandResultDto` and `MowerCommandResultDto[]` with timestamps and status.
-- Backend must enforce safety guardrails (battery, health, state, rate limit) and return 400/403 with reason on rejection.
-- Frontend will auto-discover new endpoints via OpenAPI prebuild on next `npm run build`.
+- Promote command/telemetry state to durable storage for long-running replay and operations reporting.
+- Add live status channel (polling or WebSocket) for near-real-time command lifecycle updates.
+- Add fleet-health endpoint/UI finalization to close remaining health visualization goals.

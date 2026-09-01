@@ -1,7 +1,6 @@
 package org.lawnpilot.api.dto;
 
-public record FleetCreateRequestDto(
-        String fleetId,
+public record FleetUpdateRequestDto(
         String displayName,
         String areaId,
         String areaName,

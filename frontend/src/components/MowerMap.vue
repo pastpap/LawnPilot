@@ -22,18 +22,55 @@ interface AreaPoint {
   lng: number;
 }
 
+interface CoordinatePoint {
+  lat: number;
+  lng: number;
+}
+
+interface CircleSelection {
+  center: CoordinatePoint;
+  radiusMeters: number;
+}
+
 interface Props {
   mowers: MowerPoint[];
   areas: AreaPoint[];
   selectedMowerId?: string;
+  pinPlacementEnabled?: boolean;
+  candidateStartPin?: CoordinatePoint | null;
+  areaCircleDrawingEnabled?: boolean;
+  candidateAreaCircle?: CircleSelection | null;
+  draftAreaCircle?: CircleSelection | null;
+  fleetCircles?: (CircleSelection & { label: string })[];
 }
 
 const props = defineProps<Props>();
+const emit = defineEmits<{
+  (event: "pin-selected", coordinates: CoordinatePoint): void;
+  (event: "area-circle-draft", circle: CircleSelection): void;
+  (event: "area-circle-selected", circle: CircleSelection): void;
+}>();
 const mapElement = ref<HTMLElement | null>(null);
 
 let map: L.Map | null = null;
 let areaLayer: L.LayerGroup | null = null;
 let mowerLayer: L.LayerGroup | null = null;
+let pinLayer: L.LayerGroup | null = null;
+let areaCircleCenter: L.LatLng | null = null;
+const SELECTED_MOWER_ZOOM = 15;
+
+function normalizeCircleSelection(
+  center: CoordinatePoint,
+  radiusMeters: number,
+): CircleSelection {
+  return {
+    center: {
+      lat: Number(center.lat.toFixed(6)),
+      lng: Number(center.lng.toFixed(6)),
+    },
+    radiusMeters: Number(Math.max(0, radiusMeters).toFixed(2)),
+  };
+}
 
 function statusColor(status: string): string {
   switch (status) {
@@ -72,7 +109,12 @@ function centerMapFromData(): L.LatLngExpression {
   return [47.6205, -122.3493];
 }
 
-function redrawLayers(): void {
+function redrawLayers(
+  options: {
+    adjustViewport?: boolean;
+    focusSelectedMower?: boolean;
+  } = {},
+): void {
   if (!map) return;
 
   if (!areaLayer) {
@@ -80,6 +122,9 @@ function redrawLayers(): void {
   }
   if (!mowerLayer) {
     mowerLayer = L.layerGroup().addTo(map);
+  }
+  if (!pinLayer) {
+    pinLayer = L.layerGroup().addTo(map);
   }
 
   areaLayer.clearLayers();
@@ -101,6 +146,19 @@ function redrawLayers(): void {
         permanent: false,
         direction: "top",
       })
+      .addTo(areaLayer);
+  }
+
+  for (const fc of props.fleetCircles ?? []) {
+    L.circle([fc.center.lat, fc.center.lng], {
+      radius: fc.radiusMeters,
+      color: "#8ba7c9",
+      fillColor: "#8ba7c9",
+      fillOpacity: 0.07,
+      weight: 1.5,
+      dashArray: "5 4",
+    })
+      .bindTooltip(fc.label, { permanent: false, direction: "top" })
       .addTo(areaLayer);
   }
 
@@ -127,10 +185,146 @@ function redrawLayers(): void {
     ),
   ];
 
-  if (points.length > 0) {
+  if (options.focusSelectedMower && props.selectedMowerId) {
+    const selectedMower = props.mowers.find(
+      (mower) => mower.mowerId === props.selectedMowerId,
+    );
+    if (selectedMower) {
+      map.setView([selectedMower.lat, selectedMower.lng], SELECTED_MOWER_ZOOM);
+    }
+  } else if (options.adjustViewport && points.length > 0) {
     const bounds = L.latLngBounds(points as [number, number][]);
     map.fitBounds(bounds.pad(0.24));
   }
+
+  pinLayer.clearLayers();
+  if (props.candidateStartPin) {
+    L.circleMarker([props.candidateStartPin.lat, props.candidateStartPin.lng], {
+      radius: 9,
+      color: "#f3f7ff",
+      weight: 2,
+      fillColor: "#f58a3b",
+      fillOpacity: 0.95,
+    })
+      .bindTooltip("Candidate mower start position", {
+        permanent: false,
+        direction: "top",
+      })
+      .addTo(pinLayer);
+  }
+
+  if (props.draftAreaCircle) {
+    L.circle(
+      [props.draftAreaCircle.center.lat, props.draftAreaCircle.center.lng],
+      {
+        radius: props.draftAreaCircle.radiusMeters,
+        color: "#ffd166",
+        fillColor: "#ffd166",
+        fillOpacity: 0.12,
+        weight: 2,
+        dashArray: "6 4",
+      },
+    )
+      .bindTooltip("Drawing fleet area circle", {
+        permanent: false,
+        direction: "top",
+      })
+      .addTo(pinLayer);
+  }
+
+  if (props.candidateAreaCircle) {
+    L.circle(
+      [
+        props.candidateAreaCircle.center.lat,
+        props.candidateAreaCircle.center.lng,
+      ],
+      {
+        radius: props.candidateAreaCircle.radiusMeters,
+        color: "#23b884",
+        fillColor: "#23b884",
+        fillOpacity: 0.1,
+        weight: 2,
+      },
+    )
+      .bindTooltip("Selected fleet area circle", {
+        permanent: false,
+        direction: "top",
+      })
+      .addTo(pinLayer);
+
+    L.circleMarker(
+      [
+        props.candidateAreaCircle.center.lat,
+        props.candidateAreaCircle.center.lng,
+      ],
+      {
+        radius: 6,
+        color: "#f3f7ff",
+        weight: 2,
+        fillColor: "#23b884",
+        fillOpacity: 1,
+      },
+    ).addTo(pinLayer);
+  }
+}
+
+function onMapClick(event: L.LeafletMouseEvent): void {
+  if (!props.pinPlacementEnabled || props.areaCircleDrawingEnabled) {
+    return;
+  }
+
+  emit("pin-selected", {
+    lat: Number(event.latlng.lat.toFixed(6)),
+    lng: Number(event.latlng.lng.toFixed(6)),
+  });
+}
+
+function emitAreaCircleDraft(event: L.LeafletMouseEvent): void {
+  if (!areaCircleCenter) {
+    return;
+  }
+
+  const draft = normalizeCircleSelection(
+    {
+      lat: areaCircleCenter.lat,
+      lng: areaCircleCenter.lng,
+    },
+    areaCircleCenter.distanceTo(event.latlng),
+  );
+  emit("area-circle-draft", draft);
+}
+
+function onMapMouseDown(event: L.LeafletMouseEvent): void {
+  if (!props.areaCircleDrawingEnabled) {
+    return;
+  }
+
+  areaCircleCenter = event.latlng;
+  emitAreaCircleDraft(event);
+}
+
+function onMapMouseMove(event: L.LeafletMouseEvent): void {
+  if (!props.areaCircleDrawingEnabled || !areaCircleCenter) {
+    return;
+  }
+
+  emitAreaCircleDraft(event);
+}
+
+function onMapMouseUp(event: L.LeafletMouseEvent): void {
+  if (!props.areaCircleDrawingEnabled || !areaCircleCenter) {
+    return;
+  }
+
+  const finalizedCircle = normalizeCircleSelection(
+    {
+      lat: areaCircleCenter.lat,
+      lng: areaCircleCenter.lng,
+    },
+    areaCircleCenter.distanceTo(event.latlng),
+  );
+  emit("area-circle-selected", finalizedCircle);
+  areaCircleCenter = null;
 }
 
 onMounted(() => {
@@ -146,24 +340,73 @@ onMounted(() => {
     attribution: "&copy; OpenStreetMap contributors",
   }).addTo(map);
 
-  redrawLayers();
+  map.on("click", onMapClick);
+  map.on("mousedown", onMapMouseDown);
+  map.on("mousemove", onMapMouseMove);
+  map.on("mouseup", onMapMouseUp);
+
+  if (props.areaCircleDrawingEnabled) {
+    map.dragging.disable();
+    mapElement.value?.classList.add("drawing-mode");
+  }
+
+  redrawLayers({ adjustViewport: true });
 });
 
 watch(
-  () => [props.mowers, props.areas, props.selectedMowerId],
+  () => [
+    props.mowers,
+    props.areas,
+    props.candidateStartPin,
+    props.candidateAreaCircle,
+    props.draftAreaCircle,
+    props.fleetCircles,
+  ],
   () => {
     redrawLayers();
   },
   { deep: true },
 );
 
+watch(
+  () => props.areaCircleDrawingEnabled,
+  (enabled) => {
+    if (!map) return;
+    if (enabled) {
+      map.dragging.disable();
+      mapElement.value?.classList.add("drawing-mode");
+    } else {
+      map.dragging.enable();
+      mapElement.value?.classList.remove("drawing-mode");
+      areaCircleCenter = null;
+    }
+  },
+);
+
+watch(
+  () => props.selectedMowerId,
+  (nextSelectedMowerId, previousSelectedMowerId) => {
+    redrawLayers({
+      focusSelectedMower:
+        Boolean(nextSelectedMowerId) &&
+        nextSelectedMowerId !== previousSelectedMowerId,
+    });
+  },
+);
+
 onUnmounted(() => {
   if (map) {
+    map.off("click", onMapClick);
+    map.off("mousedown", onMapMouseDown);
+    map.off("mousemove", onMapMouseMove);
+    map.off("mouseup", onMapMouseUp);
     map.remove();
     map = null;
   }
   areaLayer = null;
   mowerLayer = null;
+  pinLayer = null;
+  areaCircleCenter = null;
 });
 </script>
 
@@ -178,5 +421,9 @@ onUnmounted(() => {
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--border);
+}
+
+.mower-map.drawing-mode {
+  cursor: crosshair;
 }
 </style>

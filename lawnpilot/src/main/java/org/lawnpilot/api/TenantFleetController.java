@@ -5,15 +5,18 @@ import org.lawnpilot.api.dto.FleetCreateRequestDto;
 import org.lawnpilot.api.dto.FleetDto;
 import org.lawnpilot.api.dto.MowerDto;
 import org.lawnpilot.api.dto.MowerRegisterRequestDto;
+import org.lawnpilot.api.dto.MowerUpdateRequestDto;
 import org.lawnpilot.api.dto.MowerTelemetryDto;
 import org.lawnpilot.api.dto.SimulationRequestDto;
 import org.lawnpilot.api.dto.SimulationResponseDto;
 import org.lawnpilot.api.dto.TenantSimulationHistorySummaryDto;
+import org.lawnpilot.api.dto.FleetUpdateRequestDto;
 import org.lawnpilot.api.tenant.TenantFleetService;
 import org.lawnpilot.api.tenant.TenantRole;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,12 +44,35 @@ public class TenantFleetController {
                 tenantId,
                 TenantRole.fromHeader(roleHeader),
                 request.fleetId(),
-                request.displayName());
+                request.displayName(),
+                request.areaId(),
+                request.areaName(),
+                request.areaCenterLat(),
+                request.areaCenterLng(),
+                request.areaRadiusMeters());
     }
 
     @GetMapping("/fleets")
     public List<FleetDto> listFleets(@PathVariable String tenantId, @RequestHeader("X-Role") String roleHeader) {
         return tenantFleetService.listFleets(tenantId, TenantRole.fromHeader(roleHeader));
+    }
+
+    @PutMapping("/fleets/{fleetId}")
+    public FleetDto updateFleet(
+            @PathVariable String tenantId,
+            @PathVariable String fleetId,
+            @RequestHeader("X-Role") String roleHeader,
+            @RequestBody FleetUpdateRequestDto request) {
+        return tenantFleetService.updateFleet(
+                tenantId,
+                TenantRole.fromHeader(roleHeader),
+                fleetId,
+                request.displayName(),
+                request.areaId(),
+                request.areaName(),
+                request.areaCenterLat(),
+                request.areaCenterLng(),
+                request.areaRadiusMeters());
     }
 
     @PostMapping("/fleets/{fleetId}/mowers")
@@ -60,7 +86,10 @@ public class TenantFleetController {
                 TenantRole.fromHeader(roleHeader),
                 fleetId,
                 request.mowerId(),
-                request.model());
+                request.model(),
+                request.simulated(),
+                request.startLatitude(),
+                request.startLongitude());
     }
 
     @GetMapping("/fleets/{fleetId}/mowers")
@@ -69,6 +98,22 @@ public class TenantFleetController {
             @PathVariable String fleetId,
             @RequestHeader("X-Role") String roleHeader) {
         return tenantFleetService.listMowers(tenantId, TenantRole.fromHeader(roleHeader), fleetId);
+    }
+
+    @PutMapping("/fleets/{fleetId}/mowers/{mowerId}")
+    public MowerDto updateMower(
+            @PathVariable String tenantId,
+            @PathVariable String fleetId,
+            @PathVariable String mowerId,
+            @RequestHeader("X-Role") String roleHeader,
+            @RequestBody MowerUpdateRequestDto request) {
+        return tenantFleetService.updateMower(
+                tenantId,
+                TenantRole.fromHeader(roleHeader),
+                fleetId,
+                mowerId,
+                request.model(),
+                request.fleetId());
     }
 
     @GetMapping("/telemetry/mowers")

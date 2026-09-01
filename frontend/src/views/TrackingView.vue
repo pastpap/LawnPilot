@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import TrendChart from "../components/TrendChart.vue";
 import MowerMap from "../components/MowerMap.vue";
 import MowerControlPanel from "../components/MowerControlPanel.vue";
@@ -14,6 +14,7 @@ import {
   getTenantAreas,
   getTenantFleets,
   getTenantMowers,
+  refreshTenantTelemetry,
   telemetryMeta,
   tenants,
 } from "../data/telemetry";
@@ -21,6 +22,10 @@ import {
 const tenantId = currentTenantId;
 const selectedFleetId = currentFleetId;
 const selectedMowerId = ref<string | null>(null);
+
+const TELEMETRY_POLL_INTERVAL_MS = 3000;
+let telemetryPollTimer: ReturnType<typeof setInterval> | null = null;
+let telemetryPollInFlight = false;
 
 const selectedTenant = computed(() => getTenant(tenantId.value));
 const tenantFleets = computed(() => getTenantFleets(tenantId.value));
@@ -50,6 +55,14 @@ const alertMowers = computed(
 
 onMounted(() => {
   void ensureTelemetryLoaded("ADMIN");
+  startTelemetryPolling();
+});
+
+onUnmounted(() => {
+  if (telemetryPollTimer) {
+    clearInterval(telemetryPollTimer);
+    telemetryPollTimer = null;
+  }
 });
 
 const dataSourceLabel = computed(() => {
@@ -83,6 +96,23 @@ watch(mapMowers, () => {
 
 function selectMower(mowerId: string): void {
   selectedMowerId.value = selectedMowerId.value === mowerId ? null : mowerId;
+}
+
+function startTelemetryPolling(): void {
+  if (telemetryPollTimer) {
+    return;
+  }
+
+  telemetryPollTimer = setInterval(() => {
+    if (telemetryPollInFlight) {
+      return;
+    }
+
+    telemetryPollInFlight = true;
+    void refreshTenantTelemetry(tenantId.value, "ADMIN").finally(() => {
+      telemetryPollInFlight = false;
+    });
+  }, TELEMETRY_POLL_INTERVAL_MS);
 }
 
 function handleCommandSent(commandId: string): void {

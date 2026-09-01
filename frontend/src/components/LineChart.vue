@@ -16,12 +16,32 @@ const props = withDefaults(defineProps<Props>(), {
   height: 180,
 });
 
+function toSafeSeriesValue(value: number, time: string): number {
+  if (Number.isFinite(value)) {
+    return value;
+  }
+
+  console.warn(`[LineChart] invalid value for ${time}`, { value });
+  return 0;
+}
+
+const safeData = computed(() =>
+  props.data.map((point) => ({
+    time: point.time,
+    value: toSafeSeriesValue(point.value, point.time),
+  })),
+);
+
 const maxValue = computed(() =>
-  props.data.length > 0 ? Math.max(...props.data.map((d) => d.value)) : 1,
+  safeData.value.length > 0
+    ? Math.max(...safeData.value.map((d) => d.value))
+    : 1,
 );
 
 const minValue = computed(() =>
-  props.data.length > 0 ? Math.min(...props.data.map((d) => d.value)) : 0,
+  safeData.value.length > 0
+    ? Math.min(...safeData.value.map((d) => d.value))
+    : 0,
 );
 
 const range = computed(() => maxValue.value - minValue.value || 1);
@@ -29,10 +49,10 @@ const chartWidth = 500;
 const chartHeight = props.height - 40;
 
 const points = computed(() => {
-  if (props.data.length <= 1) return "";
+  if (safeData.value.length <= 1) return "";
 
-  const step = chartWidth / (props.data.length - 1);
-  const points = props.data
+  const step = chartWidth / (safeData.value.length - 1);
+  const points = safeData.value
     .map((point, index) => {
       const x = index * step;
       const y =
@@ -54,7 +74,7 @@ const points = computed(() => {
         :width="chartWidth"
         :height="height"
         class="chart-svg"
-        v-if="data.length > 0"
+        v-if="safeData.length > 0"
       >
         <!-- Grid lines -->
         <line
@@ -78,9 +98,9 @@ const points = computed(() => {
 
         <!-- Data points -->
         <circle
-          v-for="(point, index) in data"
+          v-for="(point, index) in safeData"
           :key="`point-${index}`"
-          :cx="(index / Math.max(data.length - 1, 1)) * chartWidth"
+          :cx="(index / Math.max(safeData.length - 1, 1)) * chartWidth"
           :cy="chartHeight - ((point.value - minValue) / range) * chartHeight"
           r="3"
           class="data-point"
@@ -88,31 +108,31 @@ const points = computed(() => {
 
         <!-- X-axis labels (first, middle, last) -->
         <text
-          v-if="data.length > 0"
+          v-if="safeData.length > 0"
           :x="0"
           :y="chartHeight + 25"
           text-anchor="start"
           class="x-label"
         >
-          {{ data[0].time }}
+          {{ safeData[0].time }}
         </text>
         <text
-          v-if="data.length > 2"
+          v-if="safeData.length > 2"
           :x="chartWidth / 2"
           :y="chartHeight + 25"
           text-anchor="middle"
           class="x-label"
         >
-          {{ data[Math.floor(data.length / 2)].time }}
+          {{ safeData[Math.floor(safeData.length / 2)].time }}
         </text>
         <text
-          v-if="data.length > 1"
+          v-if="safeData.length > 1"
           :x="chartWidth"
           :y="chartHeight + 25"
           text-anchor="end"
           class="x-label"
         >
-          {{ data[data.length - 1].time }}
+          {{ safeData[safeData.length - 1].time }}
         </text>
       </svg>
       <div v-else class="empty-state">No data available</div>
