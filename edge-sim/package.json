@@ -1,0 +1,16 @@
+{
+    "name": "lawnpilot-edge-sim",
+    "private": true,
+    "version": "0.1.0",
+    "description": "Lightweight local IoT mower simulator for LawnPilot tenant telemetry",
+    "type": "module",
+    "scripts": {
+        "start": "node src/index.mjs",
+        "start:dry": "EDGE_SIM_DRY_RUN=true EDGE_SIM_MAX_TICKS=2 node src/index.mjs",
+        "check": "node --check src/index.mjs && node --check src/lib/data-loader.mjs && node --check src/lib/simulator.mjs"
+    },
+    "dependencies": {
+        "dotenv": "^16.6.1",
+        "json5": "^2.2.3"
+    }
+}

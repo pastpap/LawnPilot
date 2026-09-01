@@ -3,11 +3,15 @@ import { ApiError } from "./errors";
 import {
     createFleet,
     getSimulationHistorySummary,
+    getMowerCommandHistory,
     listFleets,
     listMowerTelemetry,
     listMowers,
     registerMower,
     runTenantSimulation,
+    sendMowerCommand,
+    updateFleet,
+    updateMower,
 } from "./tenantApi";
 
 describe("tenantApi", () => {
@@ -43,6 +47,64 @@ describe("tenantApi", () => {
         expect((requestInit?.headers as Record<string, string>)["X-Role"]).toBe("ADMIN");
     });
 
+    it("passes optional circle geometry fields when creating a fleet", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ fleetId: "fleet-2", displayName: "North Circle", mowerCount: 0 }), {
+                status: 200,
+            }),
+        );
+
+        await createFleet({
+            tenantId: "tenant-alpha",
+            role: "ADMIN",
+            fleetId: "fleet-2",
+            displayName: "North Circle",
+            areaGeometryType: "CIRCLE",
+            areaCenterLat: 47.66,
+            areaCenterLng: -122.33,
+            areaRadiusMeters: 190,
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            fleetId: "fleet-2",
+            displayName: "North Circle",
+            areaGeometryType: "CIRCLE",
+            areaCenterLat: 47.66,
+            areaCenterLng: -122.33,
+            areaRadiusMeters: 190,
+        });
+    });
+
+    it("updates a fleet using PUT and includes area selection payload", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ fleetId: "fleet-1", displayName: "North Rev A", mowerCount: 2 }), {
+                status: 200,
+            }),
+        );
+
+        await updateFleet({
+            tenantId: "tenant-alpha",
+            role: "ADMIN",
+            fleetId: "fleet-1",
+            displayName: "North Rev A",
+            areaId: "area-lv",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, requestInit] = fetchMock.mock.calls[0];
+        expect(url).toContain("/api/v1/tenants/tenant-alpha/fleets/fleet-1");
+        expect(requestInit?.method).toBe("PUT");
+        expect((requestInit?.headers as Record<string, string>)["X-Role"]).toBe("ADMIN");
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            displayName: "North Rev A",
+            areaId: "area-lv",
+        });
+    });
+
     it("lists fleets and mowers with role header", async () => {
         fetchMock.mockResolvedValueOnce(
             new Response(JSON.stringify([{ fleetId: "fleet-1", displayName: "North", mowerCount: 1 }]), {
@@ -65,7 +127,86 @@ describe("tenantApi", () => {
         expect((fetchMock.mock.calls[1][1]?.headers as Record<string, string>)["X-Role"]).toBe("VIEWER");
     });
 
-    it("registers mower and runs simulation/history endpoints", async () => {
+    it("updates a mower model using source fleet path without reassignment payload", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ mowerId: "mower-1", model: "LP-X2", registeredAt: "2026-09-01T10:00:00Z" }), {
+                status: 200,
+            }),
+        );
+
+        await updateMower({
+            tenantId: "tenant-alpha",
+            role: "OPERATOR",
+            sourceFleetId: "fleet-west",
+            mowerId: "mower-1",
+            model: "LP-X2",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, requestInit] = fetchMock.mock.calls[0];
+        expect(url).toContain("/api/v1/tenants/tenant-alpha/fleets/fleet-west/mowers/mower-1");
+        expect(requestInit?.method).toBe("PUT");
+        expect((requestInit?.headers as Record<string, string>)["X-Role"]).toBe("OPERATOR");
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            model: "LP-X2",
+        });
+    });
+
+    it("updates a mower using source fleet path and target fleet in payload for reassignment", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ mowerId: "mower-1", model: "LP-X2", registeredAt: "2026-09-01T10:00:00Z" }), {
+                status: 200,
+            }),
+        );
+
+        await updateMower({
+            tenantId: "tenant-alpha",
+            role: "OPERATOR",
+            sourceFleetId: "fleet-west",
+            fleetId: "fleet-east",
+            mowerId: "mower-1",
+            model: "LP-X2",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, requestInit] = fetchMock.mock.calls[0];
+        expect(url).toContain("/api/v1/tenants/tenant-alpha/fleets/fleet-west/mowers/mower-1");
+        expect(requestInit?.method).toBe("PUT");
+        expect((requestInit?.headers as Record<string, string>)["X-Role"]).toBe("OPERATOR");
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            model: "LP-X2",
+            fleetId: "fleet-east",
+        });
+    });
+
+    it("omits blank target fleet from mower update payload", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ mowerId: "mower-1", model: "LP-X2", registeredAt: "2026-09-01T10:00:00Z" }), {
+                status: 200,
+            }),
+        );
+
+        await updateMower({
+            tenantId: "tenant-alpha",
+            role: "OPERATOR",
+            sourceFleetId: "fleet-west",
+            fleetId: "   ",
+            mowerId: "mower-1",
+            model: "LP-X2",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            model: "LP-X2",
+        });
+        expect(body).not.toHaveProperty("fleetId");
+    });
+
+    it("registers simulated mower and runs simulation/history endpoints", async () => {
         fetchMock.mockResolvedValueOnce(
             new Response(JSON.stringify({ mowerId: "mower-42", model: "LP-X", registeredAt: "2026-08-31T10:00:00Z" }), {
                 status: 200,
@@ -87,6 +228,9 @@ describe("tenantApi", () => {
             fleetId: "fleet-1",
             mowerId: "mower-42",
             model: "LP-X",
+            simulated: true,
+            startLatitude: 47.611111,
+            startLongitude: -122.333333,
         });
         const simulation = await runTenantSimulation({
             tenantId: "tenant-alpha",
@@ -98,6 +242,129 @@ describe("tenantApi", () => {
         expect(mower.mowerId).toBe("mower-42");
         expect(simulation.outputLines).toEqual(["1 3 N", "5 1 E"]);
         expect(summary.simulationRunCount).toBe(4);
+
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body.simulated).toBe(true);
+        expect(body.startLatitude).toBe(47.611111);
+        expect(body.startLongitude).toBe(-122.333333);
+    });
+
+    it("sends simulated mower payload without pin coordinates when no pin is provided", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ mowerId: "mower-43", model: "LP-SIM", registeredAt: "2026-09-01T08:01:00Z" }), {
+                status: 200,
+            }),
+        );
+
+        await registerMower({
+            tenantId: "tenant-alpha",
+            role: "OPERATOR",
+            fleetId: "fleet-1",
+            mowerId: "mower-43",
+            model: "LP-SIM",
+            simulated: true,
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            mowerId: "mower-43",
+            model: "LP-SIM",
+            simulated: true,
+        });
+        expect(body).not.toHaveProperty("startLatitude");
+        expect(body).not.toHaveProperty("startLongitude");
+    });
+
+    it("omits start coordinates when register request does not include both pin coordinates", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ mowerId: "mower-11", model: "LP-EDGE", registeredAt: "2026-09-01T08:00:00Z" }), {
+                status: 200,
+            }),
+        );
+
+        await registerMower({
+            tenantId: "tenant-alpha",
+            role: "OPERATOR",
+            fleetId: "fleet-1",
+            mowerId: "mower-11",
+            model: "LP-EDGE",
+            simulated: false,
+            startLatitude: 47.611111,
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            mowerId: "mower-11",
+            model: "LP-EDGE",
+            simulated: false,
+        });
+        expect(body).not.toHaveProperty("startLatitude");
+        expect(body).not.toHaveProperty("startLongitude");
+    });
+
+    it("omits complete pin coordinates for non-simulated mower registration", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ mowerId: "mower-12", model: "LP-PIN", registeredAt: "2026-09-01T08:05:00Z" }), {
+                status: 200,
+            }),
+        );
+
+        await registerMower({
+            tenantId: "tenant-alpha",
+            role: "ADMIN",
+            fleetId: "fleet-1",
+            mowerId: "mower-12",
+            model: "LP-PIN",
+            simulated: false,
+            startLatitude: 47.622222,
+            startLongitude: -122.311111,
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            mowerId: "mower-12",
+            model: "LP-PIN",
+            simulated: false,
+        });
+        expect(body).not.toHaveProperty("startLatitude");
+        expect(body).not.toHaveProperty("startLongitude");
+    });
+
+    it("falls back to no-pin payload when one malformed coordinate field is provided", async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({ mowerId: "mower-13", model: "LP-NOPIN", registeredAt: "2026-09-01T08:06:00Z" }), {
+                status: 200,
+            }),
+        );
+
+        await registerMower({
+            tenantId: "tenant-alpha",
+            role: "ADMIN",
+            fleetId: "fleet-1",
+            mowerId: "mower-13",
+            model: "LP-NOPIN",
+            simulated: false,
+            startLatitude: 47.622222,
+            startLongitude: "-122.311111" as unknown as number,
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body).toEqual({
+            mowerId: "mower-13",
+            model: "LP-NOPIN",
+            simulated: false,
+        });
+        expect(body).not.toHaveProperty("startLatitude");
+        expect(body).not.toHaveProperty("startLongitude");
     });
 
     it("loads mower telemetry from backend endpoint", async () => {
@@ -133,5 +400,96 @@ describe("tenantApi", () => {
         fetchMock.mockResolvedValueOnce(new Response("Role is invalid", { status: 400, statusText: "Bad Request" }));
 
         await expect(listFleets({ tenantId: "tenant-alpha", role: "VIEWER" })).rejects.toBeInstanceOf(ApiError);
+    });
+
+    it("sends mower command with correct endpoint and role header", async () => {
+        const commandResult = {
+            commandId: "cmd-1",
+            mowerId: "mower-1",
+            commandType: "PAUSE",
+            status: "ACCEPTED",
+            createdAt: "2026-08-31T10:00:00Z",
+        };
+        fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(commandResult), { status: 200 }));
+
+        const result = await sendMowerCommand({
+            tenantId: "tenant-alpha",
+            fleetId: "fleet-1",
+            mowerId: "mower-1",
+            commandType: "PAUSE",
+            role: "OPERATOR",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, requestInit] = fetchMock.mock.calls[0];
+        expect(url).toContain("/api/v1/tenants/tenant-alpha/fleets/fleet-1/mowers/mower-1/commands");
+        expect(requestInit?.method).toBe("POST");
+        expect((requestInit?.headers as Record<string, string>)["X-Role"]).toBe("OPERATOR");
+        expect(result.commandId).toBe("cmd-1");
+        expect(result.commandType).toBe("PAUSE");
+    });
+
+    it("gets mower command history with correct endpoint", async () => {
+        const history = [
+            {
+                commandId: "cmd-1",
+                mowerId: "mower-1",
+                commandType: "PAUSE",
+                status: "COMPLETED",
+                createdAt: "2026-08-31T10:00:00Z",
+                completedAt: "2026-08-31T10:00:05Z",
+            },
+            {
+                commandId: "cmd-2",
+                mowerId: "mower-1",
+                commandType: "RESUME",
+                status: "COMPLETED",
+                createdAt: "2026-08-31T10:01:00Z",
+                completedAt: "2026-08-31T10:01:02Z",
+            },
+        ];
+        fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(history), { status: 200 }));
+
+        const result = await getMowerCommandHistory({
+            tenantId: "tenant-alpha",
+            fleetId: "fleet-1",
+            mowerId: "mower-1",
+            role: "VIEWER",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, requestInit] = fetchMock.mock.calls[0];
+        expect(url).toContain("/api/v1/tenants/tenant-alpha/fleets/fleet-1/mowers/mower-1/commands");
+        expect(requestInit?.method).toBe("GET");
+        expect((requestInit?.headers as Record<string, string>)["X-Role"]).toBe("VIEWER");
+        expect(result).toHaveLength(2);
+        expect(result[0].commandType).toBe("PAUSE");
+        expect(result[1].commandType).toBe("RESUME");
+    });
+
+    it("sends command with optional metadata", async () => {
+        const commandResult = {
+            commandId: "cmd-1",
+            mowerId: "mower-1",
+            commandType: "OVERRIDE",
+            status: "ACCEPTED",
+            createdAt: "2026-08-31T10:00:00Z",
+        };
+        fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(commandResult), { status: 200 }));
+
+        const result = await sendMowerCommand({
+            tenantId: "tenant-alpha",
+            fleetId: "fleet-1",
+            mowerId: "mower-1",
+            commandType: "OVERRIDE",
+            metadata: { operatorId: "op-123", reason: "maintenance-check" },
+            role: "ADMIN",
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [, requestInit] = fetchMock.mock.calls[0];
+        const body = JSON.parse(requestInit?.body as string);
+        expect(body.metadata).toEqual({ operatorId: "op-123", reason: "maintenance-check" });
+        expect(result.commandType).toBe("OVERRIDE");
     });
 });

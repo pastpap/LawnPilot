@@ -263,3 +263,50 @@ Frontend build:
 cd frontend
 npm run build
 ```
+
+## Phase 7 Local Development (Edge IoT Simulator)
+
+A lightweight local simulator is available in `edge-sim/` to mimic mower IoT telemetry streams.
+
+What it does:
+
+- Loads mower seed records from `frontend/src/data/telemetry.ts`.
+- Starts one simulator stream per mower.
+- Periodically emits telemetry events to:
+  - `POST /api/v1/tenants/{tenantId}/fleets/{fleetId}/mowers/{mowerId}/telemetry/events`
+- Idempotently ensures fleets and mowers exist before streaming.
+
+Quick start:
+
+```bash
+# terminal 1: backend + frontend
+npm run dev
+
+# terminal 2: edge simulator
+cd edge-sim
+npm install
+cp .env.example .env
+npm run start
+```
+
+Single-command full stack from repo root:
+
+```bash
+npm run dev:all
+```
+
+Dry-run mode (no HTTP calls, logs only):
+
+```bash
+npm run dev:edge-sim:dry
+```
+
+Environment config (edge simulator):
+
+- `EDGE_SIM_API_BASE_URL` default: `http://localhost:8080/api/v1`
+- `EDGE_SIM_INTERVAL_MS` default: `5000`
+- `EDGE_SIM_ROLE` default: `OPERATOR`
+- `EDGE_SIM_MOWERS_FILE` default: `../frontend/src/data/telemetry.ts`
+- `EDGE_SIM_TENANT_FILTER` optional comma-separated tenant IDs
+- `EDGE_SIM_DRY_RUN` set `true` to disable HTTP posts
+- `EDGE_SIM_MAX_TICKS` optional finite run for local checks

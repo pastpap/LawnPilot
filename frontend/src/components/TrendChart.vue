@@ -16,20 +16,42 @@ const props = withDefaults(defineProps<Props>(), {
   height: 200,
 });
 
-const maxValue = computed(() =>
-  props.data.length > 0 ? Math.max(...props.data.map((d) => d.value)) : 1,
+function toSafeChartValue(value: number, label: string): number {
+  if (Number.isFinite(value)) {
+    return value;
+  }
+
+  console.warn(`[TrendChart] invalid value for ${label}`, { value });
+  return 0;
+}
+
+const safeData = computed(() =>
+  props.data.map((point) => ({
+    label: point.label,
+    value: toSafeChartValue(point.value, point.label),
+  })),
 );
 
-const chartWidth = computed(() => Math.max(300, props.data.length * 40));
+const maxValue = computed(() =>
+  safeData.value.length > 0
+    ? Math.max(1, ...safeData.value.map((d) => d.value))
+    : 1,
+);
+
+const chartWidth = computed(() => Math.max(300, safeData.value.length * 40));
 
 const bars = computed(() =>
-  props.data.map((point, index) => {
-    const barHeight = (point.value / maxValue.value) * (props.height - 60);
+  safeData.value.map((point, index) => {
+    const rawHeight =
+      (point.value / Math.max(maxValue.value, 1)) * (props.height - 60);
+    const barHeight = Number.isFinite(rawHeight)
+      ? Math.max(0, Math.min(props.height - 60, rawHeight))
+      : 0;
     return {
       label: point.label,
       value: point.value,
       height: barHeight,
-      x: index * (chartWidth.value / Math.max(props.data.length, 1)),
+      x: index * (chartWidth.value / Math.max(safeData.value.length, 1)),
     };
   }),
 );
@@ -43,7 +65,7 @@ const bars = computed(() =>
         :width="chartWidth"
         :height="height"
         class="chart-svg"
-        v-if="data.length > 0"
+        v-if="safeData.length > 0"
       >
         <!-- Grid lines -->
         <line

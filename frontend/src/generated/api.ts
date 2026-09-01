@@ -4,6 +4,38 @@
  */
 
 export interface paths {
+    "/api/v1/tenants/{tenantId}/fleets/{fleetId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateFleet"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenantId}/fleets/{fleetId}/mowers/{mowerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateMower"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenants/{tenantId}/simulations": {
         parameters: {
             query?: never;
@@ -52,6 +84,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenants/{tenantId}/fleets/{fleetId}/mowers/{mowerId}/telemetry/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["queryMowerTelemetryEvents"];
+        put?: never;
+        post: operations["recordTelemetryEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenantId}/fleets/{fleetId}/mowers/{mowerId}/commands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["issueMowerCommand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/simulations": {
         parameters: {
             query?: never;
@@ -62,6 +126,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["runSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{tenantId}/telemetry/mowers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listMowerTelemetry"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -84,10 +164,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenants/{tenantId}/fleets/{fleetId}/mowers/{mowerId}/commands/{commandId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["queryCommandStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        FleetUpdateRequestDto: {
+            displayName?: string;
+            areaId?: string;
+            areaName?: string;
+            /** Format: double */
+            areaCenterLat?: number;
+            /** Format: double */
+            areaCenterLng?: number;
+            /** Format: double */
+            areaRadiusMeters?: number;
+        };
+        FleetDto: {
+            fleetId?: string;
+            displayName?: string;
+            /** Format: int32 */
+            mowerCount?: number;
+            areaId?: string;
+            areaName?: string;
+            /** Format: double */
+            areaCenterLat?: number;
+            /** Format: double */
+            areaCenterLng?: number;
+            /** Format: double */
+            areaRadiusMeters?: number;
+        };
+        MowerUpdateRequestDto: {
+            model?: string;
+            fleetId?: string;
+        };
+        MowerDto: {
+            mowerId?: string;
+            model?: string;
+            registeredAt?: string;
+            simulated?: boolean;
+        };
         SimulationRequestDto: {
             inputLines?: string[];
         };
@@ -97,27 +228,78 @@ export interface components {
         FleetCreateRequestDto: {
             fleetId?: string;
             displayName?: string;
-        };
-        FleetDto: {
-            fleetId?: string;
-            displayName?: string;
-            /** Format: int32 */
-            mowerCount?: number;
+            areaId?: string;
+            areaName?: string;
+            /** Format: double */
+            areaCenterLat?: number;
+            /** Format: double */
+            areaCenterLng?: number;
+            /** Format: double */
+            areaRadiusMeters?: number;
         };
         MowerRegisterRequestDto: {
             mowerId?: string;
             model?: string;
+            simulated?: boolean;
+            /** Format: double */
+            startLatitude?: number;
+            /** Format: double */
+            startLongitude?: number;
         };
-        MowerDto: {
+        TelemetryEventDto: {
+            eventId?: string;
+            eventType?: string;
+            eventData?: string;
+            recordedAt?: string;
+            isCommandRelated?: boolean;
+            relatedCommandId?: string;
+        };
+        CommandRequestDto: {
+            commandType?: string;
+            targetParameter?: string;
+            overrideGuardrails?: boolean;
+            requestedBy?: string;
+        };
+        CommandResponseDto: {
+            commandId?: string;
+            status?: string;
+            message?: string;
+        };
+        MowerTelemetryDto: {
             mowerId?: string;
+            fleetId?: string;
             model?: string;
-            registeredAt?: string;
+            status?: string;
+            /** Format: int32 */
+            batteryPercent?: number;
+            /** Format: int32 */
+            runtimeMinutesToday?: number;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
+            areaId?: string;
+            areaName?: string;
+            /** Format: double */
+            targetCoverageHa?: number;
+            /** Format: double */
+            coverageTodayHa?: number;
         };
         TenantSimulationHistorySummaryDto: {
             tenantId?: string;
             /** Format: int64 */
             simulationRunCount?: number;
             lastSimulationRunAt?: string;
+        };
+        CommandStatusDto: {
+            commandId?: string;
+            status?: string;
+            guardrailStatus?: string;
+            guardrailReason?: string;
+            executionResult?: string;
+            errorReason?: string;
+            requestedAt?: string;
+            executedAt?: string;
         };
     };
     responses: never;
@@ -128,6 +310,65 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateFleet: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Role": string;
+            };
+            path: {
+                tenantId: string;
+                fleetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FleetUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FleetDto"];
+                };
+            };
+        };
+    };
+    updateMower: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Role": string;
+            };
+            path: {
+                tenantId: string;
+                fleetId: string;
+                mowerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MowerUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MowerDto"];
+                };
+            };
+        };
+    };
     runTenantSimulation: {
         parameters: {
             query?: never;
@@ -262,6 +503,90 @@ export interface operations {
             };
         };
     };
+    queryMowerTelemetryEvents: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Role": string;
+            };
+            path: {
+                tenantId: string;
+                fleetId: string;
+                mowerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TelemetryEventDto"][];
+                };
+            };
+        };
+    };
+    recordTelemetryEvent: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Role": string;
+            };
+            path: {
+                tenantId: string;
+                fleetId: string;
+                mowerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TelemetryEventDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    issueMowerCommand: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Role": string;
+            };
+            path: {
+                tenantId: string;
+                fleetId: string;
+                mowerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommandRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommandResponseDto"];
+                };
+            };
+        };
+    };
     runSimulation: {
         parameters: {
             query?: never;
@@ -286,6 +611,32 @@ export interface operations {
             };
         };
     };
+    listMowerTelemetry: {
+        parameters: {
+            query?: {
+                fleetId?: string;
+            };
+            header: {
+                "X-Role": string;
+            };
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MowerTelemetryDto"][];
+                };
+            };
+        };
+    };
     getSimulationHistorySummary: {
         parameters: {
             query?: never;
@@ -306,6 +657,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TenantSimulationHistorySummaryDto"];
+                };
+            };
+        };
+    };
+    queryCommandStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Role": string;
+            };
+            path: {
+                tenantId: string;
+                fleetId: string;
+                mowerId: string;
+                commandId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommandStatusDto"];
                 };
             };
         };
